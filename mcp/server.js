@@ -86,7 +86,12 @@ const SEVERITY_LABEL = { 0: 'error', 1: 'warning', 2: 'info', 3: 'hint' };
 //──────────────────────────────────────────────────────────
 
 function validatePineScript({ code, file_path: filePath }) {
-  if (!engine) return { error: true, message: ENGINE_MISSING_HINT };
+  // Argument errors are reported BEFORE engine availability. A caller who passed
+  // nothing has a problem with their call, not with the installation, and telling
+  // them to go clone a repository sends them down the wrong path entirely.
+  if (!code && !filePath) {
+    return { error: true, message: 'Provide either `code` or `file_path`.' };
+  }
 
   let source = code;
   if (!source && filePath) {
@@ -97,6 +102,8 @@ function validatePineScript({ code, file_path: filePath }) {
     }
   }
   if (!source) return { error: true, message: 'Provide either `code` or `file_path`.' };
+
+  if (!engine) return { error: true, message: ENGINE_MISSING_HINT };
 
   // Both diagnostic sources, because the editor runs both. A tool reporting only
   // one would tell the agent a file is clean while the user sees squiggles.
@@ -125,8 +132,8 @@ function validatePineScript({ code, file_path: filePath }) {
 }
 
 function lookupPineReference({ symbol }) {
-  if (!engine) return { error: true, message: ENGINE_MISSING_HINT };
   if (!symbol) return { error: true, message: 'Provide a `symbol`, e.g. "line.new".' };
+  if (!engine) return { error: true, message: ENGINE_MISSING_HINT };
 
   const spec = engine.signatures[symbol];
   if (spec) {
