@@ -16,3 +16,6 @@ dist/
 # Python
 __pycache__/
 *.pyc
+
+# Engine checkout used by CI
+.engine/

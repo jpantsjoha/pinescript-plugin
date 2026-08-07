@@ -126,6 +126,22 @@ def check_placeholders(where: str, value: str, errors: list[str]) -> None:
 
 
 def check_stdio(name: str, cfg: dict, errors: list[str]) -> None:
+    # Plugin-relative script arguments must actually exist. The spec validates the
+    # SHAPE of the manifest, not whether what it points at is real — so a manifest
+    # declaring "./mcp/server.js" passes cleanly while every install gets a broken
+    # server. Declaring something that does not exist is the most common defect in
+    # this codebase's history; check it here rather than discovering it downstream.
+    for arg in cfg.get("args", []) or []:
+        if not isinstance(arg, str) or not arg.startswith("./"):
+            continue
+        target = ROOT / arg[2:]
+        if not target.exists():
+            errors.append(
+                f"MCP    server '{name}': args references {arg!r}, which does not exist. "
+                f"Either build it or remove the server declaration — a manifest must "
+                f"never promise a component the package does not ship."
+            )
+
     command = cfg.get("command")
     if isinstance(command, str):
         if not command:

@@ -1,0 +1,41 @@
+name: Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Spec, skills, links and MCP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Pine examples embedded in skills are validated against the real engine.
+      # Without it validate_skill_examples.py skips loudly rather than passing
+      # silently, so CI would report "OK" on unverified examples.
+      - name: Check out the validation engine
+        uses: actions/checkout@v4
+        with:
+          repository: jpantsjoha/pinescript-vscode-extension
+          path: .engine
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build the engine
+        run: npm ci && npm run build
+        working-directory: .engine
+
+      - name: Install plugin dependencies
+        run: npm ci || npm install
+
+      - name: Run the gate
+        run: make gate
+        env:
+          PINESCRIPT_VALIDATOR: ${{ github.workspace }}/.engine

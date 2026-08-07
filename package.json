@@ -1,0 +1,13 @@
+{
+  "name": "pinescript-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server for the Pine Script v6 agent plugin",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.19.1"
+  }
+}

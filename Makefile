@@ -1,12 +1,12 @@
-.PHONY: gate spec skills links test hooks help
+.PHONY: gate spec skills links examples mcp hooks help
 
 PYTHON  := python3
 SCRIPTS := scripts
 
 # ─── Pre-commit gate. Install once with: make hooks ──────────────────────────
-gate: spec skills links test
+gate: spec skills links examples mcp
 	@echo ""
-	@echo "Gate passed: spec + skills + links + test"
+	@echo "Gate passed: spec + skills + links + examples + mcp"
 
 spec:
 	@echo "==> Agent Plugins 1.0.0 conformance..."
@@ -22,9 +22,13 @@ links:
 
 # Every Pine snippet inside a skill is extracted and validated. A skill that ships
 # Pine failing its own checker is worse than no skill at all.
-test:
+examples:
 	@echo "==> Validating Pine examples embedded in skills..."
 	@$(PYTHON) $(SCRIPTS)/validate_skill_examples.py
+
+mcp:
+	@echo "==> MCP server behaviour tests..."
+	@node --test tests/*.test.js
 
 hooks:
 	@git config core.hooksPath .githooks
@@ -35,5 +39,6 @@ help:
 	@echo "spec   - Agent Plugins 1.0.0 conformance"
 	@echo "skills - SKILL.md frontmatter contracts"
 	@echo "links  - reference URLs resolve"
-	@echo "test   - Pine examples inside skills actually validate"
+	@echo "examples - Pine examples inside skills actually validate"
+	@echo "mcp      - MCP server behaviour tests"
 	@echo "hooks  - install the pre-commit hook"
