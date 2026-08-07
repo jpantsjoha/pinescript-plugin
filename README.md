@@ -74,14 +74,16 @@ worthless, so the build blocks it.
 
 ## Install
 
-Requires the validation engine. Clone it next to this repo:
-
 ```bash
-git clone https://github.com/jpantsjoha/pinescript-vscode-extension
-cd pinescript-vscode-extension && npm ci && npm run build
+/plugin marketplace add jpantsjoha/pinescript-plugin
+/plugin install pinescript-plugin
 ```
 
-Then add the plugin to your agent. For Claude Code:
+The validation engine comes from
+[`pinescript-v6-validator`](https://www.npmjs.com/package/pinescript-v6-validator)
+on npm — no separate checkout needed.
+
+For Claude Code:
 
 ```bash
 /plugin marketplace add jpantsjoha/pinescript-plugin
@@ -92,23 +94,24 @@ It also packages for **Antigravity/Gemini** (`gemini-extension.json` + `GEMINI.m
 **Codex** (`.agents/skills/` + `AGENTS.md`) and **Kimi** (`.kimi-plugin/`). All four
 manifests are checked for consistency by `make gate`.
 
-If the engine lives elsewhere, point at it:
+To develop against an unreleased engine, point at a built checkout instead:
 
 ```bash
 export PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension
 ```
 
-> **Status: early.** One skill so far, and the engine is not yet published to a
-> package registry — so the plugin needs that local checkout. Both are being fixed;
-> see [CHANGELOG](./CHANGELOG.md).
+> **Status: early.** Three skills so far. See [CHANGELOG](./CHANGELOG.md).
 
 ## What's in it
 
 ```
-skills/pinescript-v6/     execution model, overloads, anti-repainting, platform limits
-mcp/server.js             validate_pine_script + lookup_pine_reference
-scripts/                  spec conformance, skill contracts, link and example validation
-tests/                    MCP behaviour tests
+skills/pinescript-v6/          execution model, overloads, anti-repainting, limits
+skills/pinescript-validation/  every diagnostic class and its deterministic fix
+skills/pinescript-indicator/   validated scaffolds: overlay, oscillator, drawings
+mcp/server.js                  validate_pine_script + lookup_pine_reference
+hooks/                         validates every .pine file the agent edits
+scripts/                       spec, packaging, skill, link and example validation
+tests/                         MCP behaviour tests
 ```
 
 `make gate` runs everything: Agent Plugins 1.0.0 conformance, multi-client

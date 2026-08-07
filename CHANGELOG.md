@@ -7,6 +7,40 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.2.0] - 2026-08-07
+
+### Added
+
+- **`skills/pinescript-validation`** — every diagnostic class the validator emits,
+  with its deterministic fix. Includes an explicit *what the validator cannot see*
+  section (type compatibility, runtime logic, repainting, platform limits), because
+  a clean run is not proof a script is correct, and a workflow for auditing an
+  existing codebase of broken `.pine` files.
+- **`skills/pinescript-indicator`** — three scaffolds validated in CI
+  (`overlay-indicator`, `oscillator`, `drawing-objects`) covering plotting, drawing
+  objects with cleanup, tables, alerts and the plot/object caps. Copy a scaffold
+  rather than composing from memory: composing from recollection is how wrong
+  parameter names get in.
+- **`hooks/validate-pine.sh`** — PostToolUse hook validating every `.pine` file the
+  agent edits. Real installs into Claude Code and Antigravity both reported
+  `Hooks: 0`; the plugin told agents to validate and shipped nothing to enforce it.
+
+### Changed
+
+- **The engine now comes from npm.** `pinescript-v6-validator@0.1.0` is published,
+  so the plugin no longer requires a local checkout of the VS Code extension. The
+  on-disk fallbacks remain for developing against unreleased engine changes.
+- Corrected the description in all five manifests. It advertised skills that did
+  not exist — promising components the package does not ship.
+
+### Verified
+
+Installed for real into Claude Code (`Skills 3 · Hooks 1 · MCP 1`) and Antigravity.
+Packaging consistency across all four harness manifests is now enforced by
+`make gate`. 14 embedded Pine examples validated in CI, up from 4.
+
+---
+
 ## [0.1.0] - 2026-08-07
 
 Initial release. Scaffold plus the first skill and a working MCP server.

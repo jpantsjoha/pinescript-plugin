@@ -35,8 +35,26 @@ const {
 // Engine discovery
 //──────────────────────────────────────────────────────────
 
-/** Candidate locations for the extension repo, most explicit first. */
-function engineCandidates() {
+/**
+ * Load the validation engine.
+ *
+ * Primary source is the published `pinescript-v6-validator` package, so the plugin
+ * works for anyone who installs it — no checkout of the extension required. The
+ * on-disk fallbacks remain for development against unreleased engine changes.
+ */
+function loadEngine() {
+  try {
+    const pkg = require('pinescript-v6-validator');
+    return {
+      base: 'pinescript-v6-validator (npm)',
+      AccurateValidator: pkg.AccurateValidator,
+      runDocumentChecks: pkg.runDocumentChecks,
+      signatures: pkg.PINE_FUNCTIONS_MERGED || {},
+    };
+  } catch (error) {
+    process.stderr.write(`[pinescript-mcp] npm engine unavailable (${error.message}); trying local checkouts\n`);
+  }
+
   const candidates = [];
   if (process.env.PINESCRIPT_VALIDATOR) candidates.push(process.env.PINESCRIPT_VALIDATOR);
   candidates.push(path.join(__dirname, '..', '..', 'pinescript-vscode-extension'));
@@ -46,11 +64,8 @@ function engineCandidates() {
       'Library/Mobile Documents/com~apple~CloudDocs/Documents/workspaces/pinescript-vscode-extension'
     )
   );
-  return candidates;
-}
 
-function loadEngine() {
-  for (const base of engineCandidates()) {
+  for (const base of candidates) {
     const validatorPath = path.join(base, 'dist/src/parser/accurateValidator.js');
     const checksPath = path.join(base, 'dist/src/parser/documentChecks.js');
     const dataPath = path.join(base, 'dist/v6/parameter-requirements-merged.js');
@@ -60,12 +75,9 @@ function loadEngine() {
         base,
         AccurateValidator: require(validatorPath).AccurateValidator,
         runDocumentChecks: require(checksPath).runDocumentChecks,
-        signatures: fs.existsSync(dataPath)
-          ? require(dataPath).PINE_FUNCTIONS_MERGED
-          : {},
+        signatures: fs.existsSync(dataPath) ? require(dataPath).PINE_FUNCTIONS_MERGED : {},
       };
     } catch (error) {
-      // Try the next candidate rather than dying on one bad checkout.
       process.stderr.write(`[pinescript-mcp] engine at ${base} failed to load: ${error.message}\n`);
     }
   }
@@ -75,9 +87,9 @@ function loadEngine() {
 const engine = loadEngine();
 
 const ENGINE_MISSING_HINT =
-  'Pine validation engine not found. Clone jpantsjoha/pinescript-vscode-extension, ' +
-  'run `npm run build` in it, and either place it beside this plugin or set ' +
-  'PINESCRIPT_VALIDATOR to its path.';
+  'Pine validation engine not found. Run `npm install` in the plugin directory to ' +
+  'fetch pinescript-v6-validator, or set PINESCRIPT_VALIDATOR to a built checkout ' +
+  'of jpantsjoha/pinescript-vscode-extension.';
 
 const SEVERITY_LABEL = { 0: 'error', 1: 'warning', 2: 'info', 3: 'hint' };
 

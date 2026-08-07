@@ -1,0 +1,49 @@
+//@version=6
+// SCAFFOLD — validated in CI. Lines, labels, boxes and a table, with cleanup.
+indicator("Drawing Scaffold", shorttitle="DRAW", overlay=true,
+     max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+
+lookback = input.int(20, "Lookback", minval=2, maxval=500)
+showBox  = input.bool(true, "Show range box")
+
+hi = ta.highest(high, lookback)
+lo = ta.lowest(low, lookback)
+
+// ── Persistent objects: declare with var, delete before reassigning ──────────
+var line  hiLine = na
+var line  loLine = na
+var box   rangeBox = na
+var label hiLabel = na
+
+if barstate.islast
+    // Lines — coordinate overload
+    if not na(hiLine)
+        line.delete(hiLine)
+    hiLine := line.new(x1=bar_index[lookback], y1=hi, x2=bar_index, y2=hi, color=color.red, width=1, extend=extend.right)
+
+    if not na(loLine)
+        line.delete(loLine)
+    loLine := line.new(x1=bar_index[lookback], y1=lo, x2=bar_index, y2=lo, color=color.green, width=1, extend=extend.right)
+
+    // Label — note `textalign`, not text_halign
+    if not na(hiLabel)
+        label.delete(hiLabel)
+    hiLabel := label.new(x=bar_index, y=hi, text="High " + str.tostring(hi, format.mintick), style=label.style_label_down, color=color.new(color.red, 20), textcolor=color.white, textalign=text.align_center, size=size.small)
+
+    // Box — note `text_halign`, not textalign
+    if showBox
+        if not na(rangeBox)
+            box.delete(rangeBox)
+        rangeBox := box.new(left=bar_index[lookback], top=hi, right=bar_index, bottom=lo, bgcolor=color.new(color.blue, 92), border_color=color.new(color.blue, 50), text="Range", text_halign=text.align_center, text_valign=text.align_top, text_color=color.gray)
+
+// ── Table: create once with var, populate on the last bar only ──────────────
+var table info = table.new(position=position.top_right, columns=2, rows=2, bgcolor=color.new(color.black, 85), frame_color=color.gray, frame_width=1)
+
+if barstate.islast
+    table.cell(table_id=info, column=0, row=0, text="High", text_color=color.white, text_size=size.small)
+    table.cell(table_id=info, column=1, row=0, text=str.tostring(hi, format.mintick), text_color=color.red, text_size=size.small, text_halign=text.align_right)
+    table.cell(table_id=info, column=0, row=1, text="Low", text_color=color.white, text_size=size.small)
+    table.cell(table_id=info, column=1, row=1, text=str.tostring(lo, format.mintick), text_color=color.green, text_size=size.small, text_halign=text.align_right)
+
+plot(hi, "Highest", color=color.new(color.red, 70))
+plot(lo, "Lowest",  color=color.new(color.green, 70))

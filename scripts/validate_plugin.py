@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 EXPECTED_NAME = "pinescript-plugin"
-EXPECTED_VERSION = "0.1.0"
+EXPECTED_VERSION = "0.2.0"
 
 
 def _load_json(path: Path, errors: list[str]) -> dict | None:
