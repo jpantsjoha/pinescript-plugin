@@ -1,0 +1,14 @@
+{
+  "name": "pinescript-plugin",
+  "description": "TradingView Pine Script v6 for coding agents, backed by a real validator rather than prose. Skills covering the language, the validate-fix-revalidate loop, and strategy/indicator patterns, plus an MCP server that checks Pine and grounds parameter names in the official 457-signature reference so the agent stops guessing.",
+  "version": "0.1.0",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "pinescript": {
+      "command": "node",
+      "args": [
+        "./mcp/server.js"
+      ]
+    }
+  }
+}

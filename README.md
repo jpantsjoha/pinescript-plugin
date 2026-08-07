@@ -88,6 +88,10 @@ Then add the plugin to your agent. For Claude Code:
 /plugin install pinescript-plugin
 ```
 
+It also packages for **Antigravity/Gemini** (`gemini-extension.json` + `GEMINI.md`),
+**Codex** (`.agents/skills/` + `AGENTS.md`) and **Kimi** (`.kimi-plugin/`). All four
+manifests are checked for consistency by `make gate`.
+
 If the engine lives elsewhere, point at it:
 
 ```bash
@@ -107,8 +111,9 @@ scripts/                  spec conformance, skill contracts, link and example va
 tests/                    MCP behaviour tests
 ```
 
-`make gate` runs everything: Agent Plugins 1.0.0 conformance, skill frontmatter
-contracts, reference-URL resolution, embedded Pine validation, and the MCP tests.
+`make gate` runs everything: Agent Plugins 1.0.0 conformance, multi-client
+packaging consistency, skill frontmatter contracts, reference-URL resolution,
+embedded Pine validation, and the MCP behaviour tests.
 
 ## Related projects
 

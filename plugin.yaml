@@ -1,0 +1,20 @@
+name: pinescript-plugin
+version: 0.1.0
+description: >
+  TradingView Pine Script v6 for coding agents, backed by a real validator rather
+  than prose. Skills covering the language and an MCP server that checks Pine and
+  grounds parameter names in the official reference, so the agent stops guessing.
+author: Jaroslav Pantsjoha
+license: MIT
+min_harness_version: "0.1"
+
+skills:
+  - name: pinescript-v6
+    path: skills/pinescript-v6/SKILL.md
+    wave: 1
+    status: normalized
+
+mcp:
+  pinescript:
+    command: node
+    args: ["./mcp/server.js"]

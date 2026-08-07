@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "pinescript": {
+      "command": "node",
+      "args": [
+        "./mcp/server.js"
+      ]
+    }
+  }
+}
