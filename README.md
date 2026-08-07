@@ -42,16 +42,72 @@ into TradingView, it fails, you paste the error back, it guesses again.
 
 Gives the agent a **checker and a reference**, so it stops guessing.
 
+### MCP tools
+
 | Tool | What it does |
 |---|---|
-| `validate_pine_script` | Runs the real validator and returns structured diagnostics with line numbers |
-| `lookup_pine_reference` | Returns the actual signature of any v6 built-in — required and optional parameters, **and every overload** |
+| `validate_pine_script` | Runs the real validator, returns structured diagnostics with line numbers |
+| `lookup_pine_reference` | The actual signature of any v6 built-in — parameters, **and every overload** |
 
-Plus skills covering the execution model, drawing objects, anti-repainting and the
-platform limits that quietly break scripts at scale.
+### Skills
 
-The agent checks its own work before handing it to you. The loop closes inside the
-conversation instead of across TradingView's compiler.
+| Skill | Covers |
+|---|---|
+| `pinescript-v6` | Execution model, overloaded constructors, anti-repainting, platform limits, API through July 2026 |
+| `pinescript-validation` | Every diagnostic class and its deterministic fix — plus what the validator *cannot* see |
+| `pinescript-indicator` | Plotting, drawing objects, tables, alerts. Three CI-validated scaffolds |
+| `pinescript-strategy` | Entries, exits, risk sizing, the five traps that make a backtest lie, webhook payloads |
+
+### Hook
+
+Every `.pine` file the agent edits is validated automatically. Not "remember to
+check your work" — an actual control.
+
+The loop closes inside the conversation instead of across TradingView's compiler.
+
+## Two kinds of wrong
+
+Pine breaks in two distinct ways, and most tooling conflates them.
+
+**Syntactic** — hallucinated functions, wrong parameter names, v4/v5/v6 mixed
+together. Caused by a thin training corpus and a language that changes quarterly.
+Costs a minute. **Solved here.**
+
+**Semantic** — code that compiles perfectly and is still wrong. A repainting
+signal. `ta.*` inside a conditional, silently corrupting its own history. An
+accumulator missing `var`, resetting every bar. Costs a funded account:
+
+> "one overlooked mistake — like a repainting signal or scope error — can
+> invalidate months of backtesting"
+> — [PickMyTrade](https://blog.pickmytrade.io/debugging-tradingview-strategies-10-common-pine-script-mistakes/)
+
+Prose cannot fix semantic errors, because the author already believes they are
+right. **Nine semantic checks are specified in [SPEC.md](./SPEC.md)** and being
+implemented in the engine — repainting detection, `ta.*`-in-conditional, accumulator
+state, lazy-evaluation traps, and the platform limits TradingView enforces but no
+local tool counts.
+
+## Plugin, or VS Code extension?
+
+Both — and the distinction matters, because it is what stops the two disagreeing.
+
+```
+        pinescript-v6-validator  (npm)     ← detection lives here, once
+                     │
+        ┌────────────┴────────────┐
+        ▼                         ▼
+  VS Code extension          this plugin
+  surface: humans            surface: agents
+  squiggles, hover           MCP, skills, hook
+```
+
+A check is written **once**, in the engine. The extension renders it as a squiggle;
+this plugin returns it to the model. Neither reimplements it — the moment the same
+rule exists twice they drift, and a drifted rule means your agent and your editor
+disagree about the same file.
+
+Skills are plugin-only: prose is useless in an editor and is the whole point for an
+agent. Editor affordances — formatting, go-to-definition — stay in the extension.
 
 ## Why this one
 
