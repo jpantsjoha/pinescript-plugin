@@ -49,6 +49,7 @@ function loadEngine() {
       base: 'pinescript-v6-validator (npm)',
       AccurateValidator: pkg.AccurateValidator,
       runDocumentChecks: pkg.runDocumentChecks,
+      validatePineScript: pkg.validatePineScript,
       signatures: pkg.PINE_FUNCTIONS_MERGED || {},
     };
   } catch (error) {
@@ -117,12 +118,16 @@ function validatePineScript({ code, file_path: filePath }) {
 
   if (!engine) return { error: true, message: ENGINE_MISSING_HINT };
 
-  // Both diagnostic sources, because the editor runs both. A tool reporting only
-  // one would tell the agent a file is clean while the user sees squiggles.
-  const diagnostics = [
-    ...new engine.AccurateValidator().validate(source),
-    ...engine.runDocumentChecks(source),
-  ].sort((a, b) => a.line - b.line || a.column - b.column);
+  // ALL diagnostic sources including the semantic checks, and with `// pine-ignore`
+  // honoured — validatePineScript aggregates exactly what the editor shows. A tool
+  // reporting a subset would tell the agent a file is clean while the user sees
+  // squiggles.
+  const diagnostics = engine.validatePineScript
+    ? engine.validatePineScript(source)
+    : [
+        ...new engine.AccurateValidator().validate(source),
+        ...engine.runDocumentChecks(source),
+      ].sort((a, b) => a.line - b.line || a.column - b.column);
 
   const errors = diagnostics.filter(d => d.severity === 0);
   const warnings = diagnostics.filter(d => d.severity === 1);
@@ -136,6 +141,9 @@ function validatePineScript({ code, file_path: filePath }) {
       column: d.column,
       severity: SEVERITY_LABEL[d.severity] || 'error',
       message: d.message,
+      // Present only on semantic findings (S1-S9). Its absence marks a syntactic
+      // diagnostic, which cannot be suppressed.
+      ...(d.checkId ? { check: d.checkId } : {}),
     })),
     summary: errors.length === 0
       ? `Valid Pine v6${warnings.length ? ` (${warnings.length} warning(s))` : ''}`

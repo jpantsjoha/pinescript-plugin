@@ -90,16 +90,44 @@ if this fires on a call with three arguments, report it as a validator bug.
 `"timeframe_gaps" has no effect without "timeframe"` ·
 `Wrap session checks as: not na(time(...))`
 
+## Semantic findings (S1-S9) — code that compiles and is still wrong
+
+These are **warnings about intent**, not compile errors. Each carries an id.
+
+| ID | Finding | What to do |
+|---|---|---|
+| **S1** | `request.security()` reads the current, still-forming bar | Use `close[1]`, or pass `lookahead=barmerge.lookahead_off` to say you meant it |
+| **S2** | `ta.*` called inside a ternary or block | Compute it unconditionally, then select the result |
+| **S3** | Accumulator reassigned without `var` | Declare it `var` so it persists across bars |
+| **S4** | Assignment inside `and`/`or` | v6 short-circuits; move the assignment out |
+| **S5** | More than 64 plot calls | Remove some — TradingView will reject the script |
+| **S6** | More than 40 `request.*()` calls | Consolidate — same hard limit |
+| **S7** | `plot`/`bgcolor`/`fill` outside global scope | Move it out and pass `na` to hide it conditionally |
+| **S8** | Function defined inside a block | Move it to root indentation |
+| **S9** | `strategy.entry` with no exit anywhere | Add `strategy.exit` or `strategy.close` |
+
+**S5-S8 are errors** — TradingView will reject the script. The rest are warnings.
+
+### Suppressing a finding you have considered
+
+```pine
+d = request.security(syminfo.tickerid, "D", close)   // pine-ignore: S1
+v = ta.rsi(close, 14)                                // pine-ignore
+```
+
+Use this when the finding is genuinely wrong for your case, not to quieten the
+output. **Syntactic diagnostics can never be suppressed** — a compile error is a
+fact, and hiding it would mean shipping a script that cannot run.
+
 ## What the validator CANNOT see
 
 Be explicit about this. A clean run is not proof the script is correct.
 
 | Not checked | Consequence |
 |---|---|
-| **Type compatibility** | `series` passed where `simple` is required compiles here, fails on TradingView |
-| **Runtime logic** | An accumulator missing `var` resets every bar and validates clean |
-| **Repainting** | `request.security` without `[1]` is a silent correctness bug |
-| **Platform limits** | 64 plots, 40 `request.*` calls, 80k tokens — counted by TradingView, not here |
+| **Runtime logic beyond S3/S4** | Most state bugs still need a human read |
+| **Type compatibility** | `series` where `simple` is required compiles here, fails on TradingView |
+| **Script size** | 80k token limit — counted by TradingView, not here |
 | **Series semantics** | `ta.*` inside a conditional validates but corrupts state |
 
 After a clean validation, **still review for these by eye.** They are the errors

@@ -152,3 +152,50 @@ test('requires a symbol', () => {
   const result = lookupPineReference({});
   assert.strictEqual(result.error, true);
 });
+
+//──────────────────────────────────────────────────────────
+// Semantic checks (engine 0.2.0)
+//
+// The tool must surface defects that COMPILE and are still wrong. Returning only
+// syntactic findings would tell the agent a repainting strategy is fine.
+//──────────────────────────────────────────────────────────
+
+test('surfaces S1 — a repainting request.security', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({
+    code: HEADER + 'd = request.security(syminfo.tickerid, "D", close)\nplot(d)\n',
+  });
+  assert.ok(result.diagnostics.some(d => d.check === 'S1'),
+    'Repainting is the most cited Pine defect; the agent must see it: ' +
+    JSON.stringify(result.diagnostics));
+});
+
+test('is silent on the anti-repainting idiom', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({
+    code: HEADER + 'd = request.security(syminfo.tickerid, "D", close[1])\nplot(d)\n',
+  });
+  assert.ok(!result.diagnostics.some(d => d.check === 'S1'),
+    'close[1] reads a settled bar — flagging it would punish correct code');
+});
+
+test('surfaces S7 — plot() outside global scope', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({ code: HEADER + 'if close > open\n    plot(close)\n' });
+  assert.ok(result.diagnostics.some(d => d.check === 'S7'));
+  assert.strictEqual(result.valid, false, 'a scope error will not compile');
+});
+
+test('honours `// pine-ignore` for a semantic finding', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({
+    code: HEADER + 'd = request.security(syminfo.tickerid, "D", close)  // pine-ignore: S1\nplot(d)\n',
+  });
+  assert.ok(!result.diagnostics.some(d => d.check === 'S1'),
+    'an author who has considered a finding can silence it');
+});
+
+test('a syntactic diagnostic carries no check id and cannot be suppressed', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({
+    code: HEADER + 'l = line.new(x1=1, y1=2, x2=3, y2=4, colour=color.red)  // pine-ignore\n',
+  });
+  const syntactic = result.diagnostics.filter(d => !d.check && d.severity === 'error');
+  assert.ok(syntactic.length > 0,
+    'a compile error is a fact, not a judgement — it survives any directive');
+});
