@@ -1,0 +1,47 @@
+//@version=6
+// SCAFFOLD — validated in CI. Moving-average cross with honest backtest settings.
+// Deliberately simple: it exists to show correct STRUCTURE, not to be traded.
+strategy("Basic Strategy Scaffold", shorttitle="BASIC", overlay=true,
+     initial_capital       = 10000,
+     default_qty_type      = strategy.percent_of_equity,
+     default_qty_value     = 10,
+     commission_type       = strategy.commission.percent,
+     commission_value      = 0.05,      // never leave this at zero
+     slippage              = 2,          // ticks
+     process_orders_on_close = true,
+     calc_on_every_tick    = false)      // only act on closed bars
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+fastLength  = input.int(9,  "Fast length", minval=1, maxval=500, group="Signal")
+slowLength  = input.int(21, "Slow length", minval=2, maxval=500, group="Signal")
+stopPercent = input.float(2.0, "Stop %",   minval=0.1, maxval=50, step=0.1, group="Risk")
+tpPercent   = input.float(4.0, "Target %", minval=0.1, maxval=99, step=0.1, group="Risk")
+
+// ── Calculations — every ta.* call is unconditional ──────────────────────────
+fastMa = ta.ema(close, fastLength)
+slowMa = ta.ema(close, slowLength)
+
+crossUp   = ta.crossover(fastMa, slowMa)
+crossDown = ta.crossunder(fastMa, slowMa)
+
+// ── Entries, gated on a confirmed bar so history and live agree ─────────────
+if barstate.isconfirmed and crossUp and strategy.position_size <= 0
+    strategy.entry("Long", strategy.long, comment="MA cross up")
+
+if barstate.isconfirmed and crossDown and strategy.position_size >= 0
+    strategy.entry("Short", strategy.short, comment="MA cross down")
+
+// ── Exits — derived from the actual fill, not the signal bar's close ────────
+if strategy.position_size > 0
+    strategy.exit("Long Exit", from_entry="Long",
+         stop  = strategy.position_avg_price * (1 - stopPercent / 100),
+         limit = strategy.position_avg_price * (1 + tpPercent   / 100))
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", from_entry="Short",
+         stop  = strategy.position_avg_price * (1 + stopPercent / 100),
+         limit = strategy.position_avg_price * (1 - tpPercent   / 100))
+
+plot(fastMa, "Fast", color=color.new(color.aqua, 0))
+plot(slowMa, "Slow", color=color.new(color.orange, 0))
+plot(strategy.position_size != 0 ? strategy.position_avg_price : na, "Avg price", color=color.new(color.yellow, 0), style=plot.style_linebr)

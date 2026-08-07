@@ -100,7 +100,7 @@ To develop against an unreleased engine, point at a built checkout instead:
 export PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension
 ```
 
-> **Status: early.** Three skills so far. See [CHANGELOG](./CHANGELOG.md).
+> **Status: early.** Four skills so far. See [CHANGELOG](./CHANGELOG.md).
 
 ## What's in it
 
@@ -108,6 +108,7 @@ export PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension
 skills/pinescript-v6/          execution model, overloads, anti-repainting, limits
 skills/pinescript-validation/  every diagnostic class and its deterministic fix
 skills/pinescript-indicator/   validated scaffolds: overlay, oscillator, drawings
+skills/pinescript-strategy/    entries, exits, sizing, and the repainting traps
 mcp/server.js                  validate_pine_script + lookup_pine_reference
 hooks/                         validates every .pine file the agent edits
 scripts/                       spec, packaging, skill, link and example validation

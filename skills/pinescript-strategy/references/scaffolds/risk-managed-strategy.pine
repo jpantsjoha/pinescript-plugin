@@ -1,0 +1,49 @@
+//@version=6
+// SCAFFOLD — validated in CI. ATR stops, risk-based sizing, webhook payloads.
+strategy("Risk-Managed Scaffold", shorttitle="RISK", overlay=true,
+     initial_capital       = 10000,
+     default_qty_type      = strategy.fixed,   // size computed per trade below
+     commission_type       = strategy.commission.percent,
+     commission_value      = 0.05,
+     slippage              = 2,
+     process_orders_on_close = true,
+     calc_on_every_tick    = false)
+
+riskPercent = input.float(1.0, "Risk per trade %", minval=0.1, maxval=10, step=0.1, group="Risk")
+atrLength   = input.int(14,  "ATR length",   minval=1, maxval=200, group="Risk")
+atrMult     = input.float(2.0, "ATR stop x", minval=0.5, maxval=10, step=0.1, group="Risk")
+rrRatio     = input.float(2.0, "Reward:risk", minval=0.5, maxval=10, step=0.1, group="Risk")
+
+// ── ta.* unconditional, always ───────────────────────────────────────────────
+atr    = ta.atr(atrLength)
+fastMa = ta.ema(close, 20)
+slowMa = ta.ema(close, 50)
+
+// ── Anti-repainting higher-timeframe filter: previous CLOSED bar only ───────
+htfTrend = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
+
+longSignal = ta.crossover(fastMa, slowMa) and close > htfTrend
+
+// ── Size from risk, not from a fixed quantity ───────────────────────────────
+stopDistance = atr * atrMult
+riskCapital  = strategy.equity * riskPercent / 100
+qty          = stopDistance > 0 ? riskCapital / stopDistance : 0
+
+// ── Webhook payload — valid JSON for a broker bridge ────────────────────────
+entryMessage = '{"ticker":"' + syminfo.ticker + '","action":"buy","sentiment":"long","quantity":' + str.tostring(qty, "#.##") + '}'
+exitMessage  = '{"ticker":"' + syminfo.ticker + '","action":"sell","sentiment":"flat"}'
+
+if barstate.isconfirmed and longSignal and strategy.position_size == 0 and qty > 0
+    strategy.entry("Long", strategy.long, qty=qty, comment="ATR sized", alert_message=entryMessage)
+
+if strategy.position_size > 0
+    entryPrice = strategy.position_avg_price
+    strategy.exit("Long Exit", from_entry="Long",
+         stop          = entryPrice - stopDistance,
+         limit         = entryPrice + stopDistance * rrRatio,
+         alert_message = exitMessage)
+
+plot(fastMa,   "Fast MA",   color=color.new(color.aqua, 0))
+plot(slowMa,   "Slow MA",   color=color.new(color.orange, 0))
+plot(htfTrend, "HTF trend", color=color.new(color.gray, 50))
+plot(strategy.position_size > 0 ? strategy.position_avg_price - stopDistance : na, "Stop", color=color.new(color.red, 0), style=plot.style_linebr)

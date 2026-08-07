@@ -1,5 +1,5 @@
 name: pinescript-plugin
-version: 0.2.0
+version: 0.3.0
 description: >
   TradingView Pine Script v6 for coding agents, backed by a real validator rather
   than prose. Skills covering the language and an MCP server that checks Pine and
@@ -19,6 +19,10 @@ skills:
     status: normalized
   - name: pinescript-indicator
     path: skills/pinescript-indicator/SKILL.md
+    wave: 2
+    status: normalized
+  - name: pinescript-strategy
+    path: skills/pinescript-strategy/SKILL.md
     wave: 2
     status: normalized
 

@@ -7,6 +7,34 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.3.0] - 2026-08-07
+
+### Added
+
+- **`skills/pinescript-strategy`** — entries, exits, position sizing, and the five
+  traps that make a backtest lie. Built from user evidence rather than assumption:
+  practitioners report that *"one overlooked mistake — like a repainting signal or
+  scope error — can invalidate months of backtesting"*
+  ([PickMyTrade](https://blog.pickmytrade.io/debugging-tradingview-strategies-10-common-pine-script-mistakes/)).
+  Covers repainting, unconfirmed-bar entries, `ta.*` in conditionals, the v6
+  lazy-evaluation trap, and optimistic fill assumptions — every one of which
+  compiles cleanly and is still wrong.
+- Two CI-validated scaffolds: `basic-strategy` and `risk-managed-strategy`, the
+  latter with ATR stops, risk-based sizing and webhook JSON payloads for broker
+  automation (TradersPost / PickMyTrade shape).
+
+### Notable
+
+Competitive research (`_plugin/research/COMPETITIVE-LANDSCAPE.md`) found that every
+comparable AI tool is prose-only — none can check the code it emits. Two failure
+modes exist and the industry conflates them: syntactic errors, which a validator
+solves, and semantic errors that compile perfectly and are still wrong. The
+expensive failures are all semantic.
+
+Embedded Pine examples validated in CI: 14 -> 22.
+
+---
+
 ## [0.2.0] - 2026-08-07
 
 ### Added
