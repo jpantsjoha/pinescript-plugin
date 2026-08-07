@@ -1,0 +1,14 @@
+# Plugin working directory — planning, research drafts, audits (never public)
+_plugin/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
