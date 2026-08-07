@@ -1,0 +1,28 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "pinescript-plugin",
+  "version": "0.1.0",
+  "description": "TradingView Pine Script v6 for coding agents, backed by a real validator rather than prose. Skills covering the language, the validate-fix-revalidate loop, and strategy/indicator patterns, plus an MCP server that checks Pine and grounds parameter names in the official 457-signature reference so the agent stops guessing.",
+  "author": {
+    "name": "Jaroslav Pantsjoha",
+    "url": "https://jpantsjoha.com"
+  },
+  "homepage": "https://github.com/jpantsjoha/pinescript-plugin",
+  "repository": "https://github.com/jpantsjoha/pinescript-plugin",
+  "license": "MIT",
+  "keywords": [
+    "pinescript",
+    "pine-script",
+    "pine-v6",
+    "tradingview",
+    "trading",
+    "indicators",
+    "strategies",
+    "backtesting",
+    "validation",
+    "linter",
+    "mcp",
+    "claude-code",
+    "agent-plugin"
+  ]
+}

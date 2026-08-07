@@ -1,0 +1,20 @@
+{
+  "name": "pinescript-plugin-marketplace",
+  "description": "Pine Script v6 skills and MCP tooling for coding agents \u2014 validator-backed, not prose.",
+  "owner": {
+    "name": "Jaroslav Pantsjoha",
+    "url": "https://jpantsjoha.com"
+  },
+  "plugins": [
+    {
+      "name": "pinescript-plugin",
+      "description": "TradingView Pine Script v6 for coding agents, backed by a real validator rather than prose. Skills covering the language, the validate-fix-revalidate loop, and strategy/indicator patterns, plus an MCP server that checks Pine and grounds parameter names in the official 457-signature reference so the agent stops guessing.",
+      "version": "0.1.0",
+      "source": "./",
+      "author": {
+        "name": "Jaroslav Pantsjoha",
+        "url": "https://jpantsjoha.com"
+      }
+    }
+  ]
+}

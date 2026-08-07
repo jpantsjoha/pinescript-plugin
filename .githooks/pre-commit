@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Blocks a commit that breaks spec conformance, skill contracts, links, or the
+# embedded Pine examples. Install with: make hooks
+set -e
+exec make gate
