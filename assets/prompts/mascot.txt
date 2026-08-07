@@ -1,0 +1,23 @@
+A friendly mascot logo for a developer tool called "pinescript-plugin".
+
+Subject: a small, sturdy pine tree character acting as a gatekeeper or inspector.
+It holds a magnifying glass in one branch-arm and stands beside a short vertical
+candlestick chart (three candles, two green one red) that it is examining. The
+tree's expression is calm and confident — a careful reviewer, not a cartoon
+salesman. One branch is raised in a small "stop, let me check that" gesture.
+
+Style: flat vector illustration, bold clean outlines, no gradients, no drop
+shadows, no textures. Modern developer-tool aesthetic — the visual language of a
+CLI logo or a language-server icon, not a finance advert.
+
+Palette: deep navy (#0E1626) as the dominant dark, TradingView-style teal-green
+(#26A69A) for the pine foliage, a single warm amber (#FFB74D) accent on the
+magnifying glass lens. Pure white background.
+
+Composition: square, centred, the character occupying about 70% of the frame with
+generous whitespace around it. Must remain legible and recognisable when scaled
+down to 64x64 pixels — simple silhouette, high contrast, minimal internal detail.
+
+Exclude: any text, letters, words or numbers anywhere in the image. No currency
+symbols, no dollar signs, no bulls or bears, no rocket ships, no photorealism, no
+3D rendering, no stock-photo lighting, no background scenery.

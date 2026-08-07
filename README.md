@@ -1,3 +1,5 @@
+<img src="assets/mascot.png" alt="pinescript-plugin mascot: a pine tree inspecting a candlestick chart through a magnifying glass" width="150" align="right" />
+
 # pinescript-plugin
 
 > Pine Script v6 for coding agents — backed by a real validator, not prose.

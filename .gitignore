@@ -19,3 +19,7 @@ __pycache__/
 
 # Engine checkout used by CI
 .engine/
+
+# Generated images land in ~/generated-images/ first; only reviewed assets are
+# committed. The prompt that produced them IS tracked (assets/prompts/) — an image
+# with no recorded prompt cannot be reproduced or improved.
