@@ -1,53 +1,132 @@
 # pinescript-plugin
 
-> Pine Script v6 skills and MCP tooling for coding agents — backed by a real
-> validator, not prose.
+> Pine Script v6 for coding agents — backed by a real validator, not prose.
 
-**Status: placeholder.** Under active construction. See
-[SCOPE](#scope) for what is planned and
-[pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension)
-for the engine this will be built on.
+[![Gate](https://github.com/jpantsjoha/pinescript-plugin/actions/workflows/gate.yml/badge.svg)](https://github.com/jpantsjoha/pinescript-plugin/actions/workflows/gate.yml)
+[![Agent Plugins 1.0.0](https://img.shields.io/badge/Agent%20Plugins-1.0.0-blue)](https://agent-plugins.org/specification)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 ---
 
-## What this will be
+## The problem
 
-An [Agent Plugins 1.0.0](https://agent-plugins.org/specification) plugin giving a
-coding agent working knowledge of TradingView Pine Script v6:
+Ask any coding agent for a TradingView indicator and you get code that looks
+right, reads fluently, and does not compile.
 
-- **Skills** — language rules, validation workflow, strategy and indicator
-  patterns, anti-repainting, v5 → v6 migration
-- **MCP server** — `validate_pine_script` and `lookup_pine_reference`, so an agent
-  can check its own Pine and ground parameter names in the real reference instead
-  of guessing
+```pine
+// Confident. Fluent. Four compile errors.
+l = line.new(x1=1, y1=2, x2=3, y2=4, colour=color.red)   // it's `color`, not `colour`
+plotshape(cond, shape=shape.triangleup)                   // it's `style=`, not `shape=`
+v = math.clamp(x, 0, 1)                                   // math.clamp doesn't exist in Pine
+b = box.new(left=1, top=2, right=3, bottom=4, textalign=text.align_left)  // box uses text_halign
+```
 
-## Why it exists
+Three things make Pine unusually hostile to a language model:
 
-Agents write Pine confidently and wrongly — inventing parameter names, missing that
-`line.new` has two overloads, reaching for functions TradingView removed. Prose
-guidance does not fix that. A validator does.
+1. **Parameter names are not guessable.** `label.new` takes `textalign`. `box.new`
+   takes `text_halign`. Nothing about either name implies the other.
+2. **Several functions have two valid call forms.** `line.new`, `label.new` and
+   `box.new` each accept a `chart.point` *or* independent coordinates. A model
+   that has only seen one form will insist the other is wrong.
+3. **The language keeps moving.** TradingView shipped `request.footprint()`,
+   multiline strings and `calc_on_every_history_tick` in the last eighteen months —
+   and *removed* the wrapped-line indentation rules in December 2025. Training data
+   goes stale in both directions.
 
-## Scope
+The result is a loop you have probably lived: the agent writes Pine, you paste it
+into TradingView, it fails, you paste the error back, it guesses again.
 
-| Component | Purpose |
+## What this does about it
+
+Gives the agent a **checker and a reference**, so it stops guessing.
+
+| Tool | What it does |
 |---|---|
-| `skills/` | Pine v6 language, validation loop, strategy/indicator patterns |
-| `mcp/` | Validation + reference-lookup server over stdio |
-| `plugin.json` / `mcp.json` | Agent Plugins 1.0.0 manifests |
+| `validate_pine_script` | Runs the real validator and returns structured diagnostics with line numbers |
+| `lookup_pine_reference` | Returns the actual signature of any v6 built-in — required and optional parameters, **and every overload** |
+
+Plus skills covering the execution model, drawing objects, anti-repainting and the
+platform limits that quietly break scripts at scale.
+
+The agent checks its own work before handing it to you. The loop closes inside the
+conversation instead of across TradingView's compiler.
+
+## Why this one
+
+**It shares an engine with a published VS Code extension.** The validator here is
+the same one running in
+[pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension)
+— 1,400+ installs, 4.45★. So the agent and your editor cannot disagree about a file.
+
+That engine carries:
+
+- **457 function signatures** scraped from the official v6 reference, plus a
+  hand-maintained layer for everything TradingView shipped since
+- **Explicit overload modelling** — a call is valid if it satisfies *any* form
+- **A golden corpus** of scripts verified to compile on TradingView, asserted to
+  produce zero errors on every commit
+
+Every Pine example in every skill is extracted and run through that validator in
+CI. A skill shipping code that fails its own checker would make the whole thing
+worthless, so the build blocks it.
+
+## Install
+
+Requires the validation engine. Clone it next to this repo:
+
+```bash
+git clone https://github.com/jpantsjoha/pinescript-vscode-extension
+cd pinescript-vscode-extension && npm ci && npm run build
+```
+
+Then add the plugin to your agent. For Claude Code:
+
+```bash
+/plugin marketplace add jpantsjoha/pinescript-plugin
+/plugin install pinescript-plugin
+```
+
+If the engine lives elsewhere, point at it:
+
+```bash
+export PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension
+```
+
+> **Status: early.** One skill so far, and the engine is not yet published to a
+> package registry — so the plugin needs that local checkout. Both are being fixed;
+> see [CHANGELOG](./CHANGELOG.md).
+
+## What's in it
+
+```
+skills/pinescript-v6/     execution model, overloads, anti-repainting, platform limits
+mcp/server.js             validate_pine_script + lookup_pine_reference
+scripts/                  spec conformance, skill contracts, link and example validation
+tests/                    MCP behaviour tests
+```
+
+`make gate` runs everything: Agent Plugins 1.0.0 conformance, skill frontmatter
+contracts, reference-URL resolution, embedded Pine validation, and the MCP tests.
 
 ## Related projects
 
 | Project | What it is |
 |---|---|
-| **[pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension)** | The VS Code extension — IntelliSense, hover docs and real-time validation for Pine v6. Publishes the validation engine this plugin consumes, so an agent and the editor never disagree. |
-| **[googlecloud-plugin](https://github.com/jpantsjoha/googlecloud-plugin)** | Same plugin architecture, applied to Google Cloud delivery. |
+| **[pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension)** | The VS Code extension — IntelliSense, hover docs, real-time validation. Source of the engine this plugin uses. |
+| **[googlecloud-plugin](https://github.com/jpantsjoha/googlecloud-plugin)** | Same plugin architecture applied to Google Cloud delivery — solution design, security, SRE, agentic patterns. |
 
 ### Prior art
 
 [TradersPost Pine Script plugin](https://www.claudepluginhub.com/plugins/traderspost-pinescript)
-covers similar ground. This one differs in being backed by the validation engine of
-a published VS Code extension — a shared golden corpus of scripts verified to
-compile on TradingView, rather than guidance alone.
+covers similar territory and is worth a look. The distinction claimed here is
+narrow and checkable: a shared validation engine with a published extension, and a
+CI gate that runs every documented example through it.
+
+## Contributing
+
+Found Pine that this validator gets wrong? That is the most valuable bug report
+available — a false positive is worse than a missed error, because it puts red
+marks on correct code. Open an issue with the smallest script that reproduces it.
 
 ## Author
 
