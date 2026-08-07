@@ -1,6 +1,6 @@
 ---
 name: pinescript-plugin
-description: "TradingView Pine Script v6 for coding agents, backed by a real validator rather than prose. Skills covering the language and an MCP server that checks Pine and grounds parameter names in the official 457-signature reference, so the agent stops guessing."
+description: "TradingView Pine Script v6 for coding agents, backed by a real validator rather than prose. A language skill plus an MCP server that validates Pine and returns real signatures from the official 457-function reference — including the overloads models routinely get wrong — and a hook that checks every .pine file the agent edits."
 version: "0.1.0"
 ---
 

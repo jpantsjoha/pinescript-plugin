@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/validate-pine.sh\"",
+            "timeout": 30,
+            "statusMessage": "Validating Pine Script..."
+          }
+        ]
+      }
+    ]
+  }
+}
