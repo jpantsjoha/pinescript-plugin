@@ -189,15 +189,19 @@ manifest.
 | Codex | ✅ | ✅ | — |
 | Kimi Code | ✅ *(via `--skills-dir`)* | ✅ | — |
 
-Antigravity auditing a script through the plugin's validator, and finding the
-repainting the author did not:
+Antigravity auditing a script through the plugin, and finding the repainting the
+author did not:
 
-![Antigravity running the plugin's validator and reporting an S1 repainting finding](assets/antigravity-audit.png)
+![Antigravity loading the plugin's MCP config, calling validatePineScript, and reporting an S1 repainting finding with the fix](assets/antigravity-audit.png)
 
-Note what the model does with the result. It does not paraphrase a warning: it
-names the check, states the mechanism — reading a still-forming higher-timeframe
-bar — and gives the specific edit. That is the difference between a skill that
-explains a diagnostic and one that merely mentions it.
+Two things are worth noticing. The model calls the plugin's own
+`validatePineScript` rather than reasoning about the code from memory — the
+verdict comes from the engine, not from the model's recollection of Pine. And it
+does not paraphrase the warning: it names the check, states the mechanism
+(reading a still-forming higher-timeframe bar), and gives the specific edit.
+
+That is the difference between a skill that explains a diagnostic and one that
+merely mentions it.
 
 ### Working on the plugin itself
 
