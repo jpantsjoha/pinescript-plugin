@@ -12,7 +12,7 @@
 
 > **Your agent writes Pine Script it cannot check. This gives it a checker.**
 
-> **Seven of these checks catch code that compiles perfectly and still loses money.**
+> **Eight of these checks catch code that compiles perfectly and still loses money.**
 
 Every AI Pine Script tool on the market ships advice. None of them can verify a
 single line they produce. That gap is the whole reason this exists.
@@ -55,12 +55,13 @@ its own history, a strategy that opens positions and never closes them.
 > — [PickMyTrade](https://blog.pickmytrade.io/debugging-tradingview-strategies-10-common-pine-script-mistakes/)
 
 Prose cannot fix that class of bug, because the author already believes the code
-is right. **Detection can.** Seven checks ship today:
+is right. **Detection can.** Eight checks ship today:
 
 | ID | Catches | Severity |
 |---|---|---|
 | S1 | `request.security()` reading the current, still-forming bar | Warning |
 | S2 | `ta.*` inside a ternary or block, leaving gaps in its history | Warning |
+| S3 | A `var` accumulator a loop re-adds to every bar and never resets | Warning |
 | S5 / S6 | Over 64 plots or 40 `request.*()` calls | Error |
 | S7 | `plot` / `bgcolor` / `fill` outside global scope | Error |
 | S8 | A function defined inside a block | Error |
@@ -189,6 +190,20 @@ manifest.
 | Codex | ✅ | ✅ | — |
 | Kimi Code | ✅ *(via `--skills-dir`)* | ✅ | — |
 
+Antigravity auditing a script through the plugin, and finding the repainting the
+author did not:
+
+![Antigravity loading the plugin's MCP config, calling validatePineScript, and reporting an S1 repainting finding with the fix](assets/antigravity-audit.png)
+
+Two things are worth noticing. The model calls the plugin's own
+`validatePineScript` rather than reasoning about the code from memory — the
+verdict comes from the engine, not from the model's recollection of Pine. And it
+does not paraphrase the warning: it names the check, states the mechanism
+(reading a still-forming higher-timeframe bar), and gives the specific edit.
+
+That is the difference between a skill that explains a diagnostic and one that
+merely mentions it.
+
 ### Working on the plugin itself
 
 ```bash
@@ -218,9 +233,16 @@ embedded Pine validation, and the MCP behaviour tests.
 
 Stating it plainly beats you finding out.
 
-- **Two checks are specified but not built.** S3 (accumulator without `var`) and
-  S4 (assignment inside `and`/`or`) are heuristics about intent. Until their
-  false-positive rate measures at zero they stay out. Watch for both yourself.
+- **Constant and built-in-variable NAMES are not checked.** `shape.trianglup`,
+  `color.grene` and `plot.style_circlez` validate clean here and fail on
+  TradingView. Only *parameter* names are checked, never the values.
+  `lookup_pine_reference` covers functions only, so a `found: false` for
+  `barstate.islast` means "not a function", not "not real".
+- **One check is specified but not built.** S4 (assignment inside `and`/`or`) is a
+  heuristic about intent. Until its false-positive rate measures at zero it stays
+  out. The related shape — a `ta.*` call on the right of `and`/`or`, which v6
+  short-circuits into a conditional call — escapes S2 for the same reason.
+- **Re-declaring a name with `=`** is a TradingView error and passes here.
 - **No type inference.** A `series` value passed where `simple` is required
   compiles here and fails on TradingView. Fixing that needs an AST the engine
   does not have.

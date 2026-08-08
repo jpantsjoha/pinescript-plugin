@@ -1,6 +1,6 @@
 {
   "name": "pinescript-plugin",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "MCP server for the Pine Script v6 agent plugin",
   "license": "MIT",
@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
-    "pinescript-v6-validator": "^0.2.1"
+    "pinescript-v6-validator": "^0.3.0"
   }
 }

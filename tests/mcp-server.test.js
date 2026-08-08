@@ -177,6 +177,34 @@ test('is silent on the anti-repainting idiom', { skip: !engineLoaded }, () => {
     'close[1] reads a settled bar — flagging it would punish correct code');
 });
 
+test('surfaces S3 — a var accumulator a loop never resets', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({
+    code: HEADER + 'var float sum = 0.0\nfor i = 0 to 9\n    sum := sum + close[i]\nplot(sum)\n',
+  });
+  assert.ok(result.diagnostics.some(d => d.check === 'S3'),
+    'var persists across bars, so this grows without bound: ' +
+    JSON.stringify(result.diagnostics));
+});
+
+test('is silent when a per-bar total correctly omits var', { skip: !engineLoaded }, () => {
+  const result = validatePineScript({
+    code: HEADER + 'float sum = 0.0\nfor i = 0 to 9\n    sum += close[i]\nplot(sum)\n',
+  });
+  assert.ok(!result.diagnostics.some(d => d.check === 'S3'),
+    'no var means it resets each bar — exactly what a per-bar total wants');
+});
+
+test('is silent on ta.* inside a user-defined function', { skip: !engineLoaded }, () => {
+  // A function body is indented for scope, not for branching. Flagging it fired on
+  // real working scripts, and a false positive is worse here than a miss.
+  const result = validatePineScript({
+    code: HEADER + 'f_norm(x, n) =>\n    ma = ta.sma(x, n)\n    na(ma) ? na : x / ma\nplot(f_norm(close, 20))\n',
+  });
+  assert.ok(!result.diagnostics.some(d => d.check === 'S2'),
+    'S2 must distinguish a function body from a conditional: ' +
+    JSON.stringify(result.diagnostics));
+});
+
 test('surfaces S7 — plot() outside global scope', { skip: !engineLoaded }, () => {
   const result = validatePineScript({ code: HEADER + 'if close > open\n    plot(close)\n' });
   assert.ok(result.diagnostics.some(d => d.check === 'S7'));

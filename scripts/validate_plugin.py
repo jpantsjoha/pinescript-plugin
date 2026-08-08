@@ -14,7 +14,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 EXPECTED_NAME = "pinescript-plugin"
-EXPECTED_VERSION = "0.4.2"
+
+# Derived, never hardcoded. A literal here meant every release had to remember to
+# edit this file, and the check only ever proved the manifests matched a magic
+# string — it would happily pass with all six manifests wrong together, and it
+# failed a legitimate 0.4.3 bump because the string was stale. package.json is the
+# single source of truth; everything else must agree with it.
+EXPECTED_VERSION = json.loads((ROOT / "package.json").read_text())["version"]
 
 
 def _load_json(path: Path, errors: list[str]) -> dict | None:

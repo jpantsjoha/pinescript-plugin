@@ -119,14 +119,19 @@ def build_script(code: str) -> str:
 def main() -> int:
     cli = find_validator()
     if cli is None:
+        # Returning 0 here made `make gate` print "Gate passed" over ZERO validated
+        # examples — a green gate is a claim, and this one would have been false.
+        # --allow-skip exists for the aeroplane case; it must be asked for.
+        allowed = "--allow-skip" in sys.argv
         print(
             "SKIP  Pine validator not found.\n"
             "      Examples are UNVERIFIED. Clone jpantsjoha/pinescript-vscode-extension\n"
             "      next to this repo and run `npm run build` there, or set\n"
-            "      PINESCRIPT_VALIDATOR to its path.",
+            "      PINESCRIPT_VALIDATOR to its path.\n"
+            "      Pass --allow-skip to accept an unverified run deliberately.",
             file=sys.stderr,
         )
-        return 0
+        return 0 if allowed else 1
 
     skill_files = sorted(SKILLS.glob("*/SKILL.md"))
     if not skill_files:
@@ -175,7 +180,27 @@ def main() -> int:
                 os.unlink(temp_path)
 
     print()
-    print(f"{checked} example(s) validated, {skipped} negative example(s) skipped")
+    # Scaffolds are complete scripts that the skills explicitly promise are
+    # "validated in CI". Nothing opened them until 2026-08-08, so the promise was
+    # unenforced — true by luck. The fenced-fragment pass above cannot reach them
+    # because they live in files, not in ```pine blocks.
+    scaffolds = sorted(SKILLS.glob("*/references/scaffolds/*.pine"))
+    for scaffold in scaffolds:
+        label = str(scaffold.relative_to(ROOT))
+        result = subprocess.run(
+            ["node", str(cli), str(scaffold)],
+            capture_output=True, text=True, cwd=cli.parent,
+        )
+        checked += 1
+        if result.returncode != 0:
+            failures += 1
+            detail = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+            print(f"FAIL  {label}")
+            for err in [ln.strip() for ln in detail.splitlines() if "ERROR" in ln][:5]:
+                print(f"      {err}")
+
+    print(f"{checked} example(s) validated "
+          f"({len(scaffolds)} scaffold file(s)), {skipped} negative example(s) skipped")
 
     if failures:
         print(f"\n{failures} example(s) failed — a skill must not ship Pine that fails its own validator")

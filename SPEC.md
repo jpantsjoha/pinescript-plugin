@@ -1,7 +1,7 @@
 # pinescript-plugin — Specification
 
-**Status:** v0.4.0 shipped · 7 of 9 semantic checks implemented (S3/S4 deferred)
-**Last updated:** 2026-08-07
+**Status:** v0.4.0 shipped · 8 of 9 semantic checks implemented (S3a folded into S3; S4 deferred)
+**Last updated:** 2026-08-08
 
 ---
 
@@ -82,14 +82,15 @@ The differentiator. Each is mechanically detectable from the existing line-based
 pass — **no AST required**, which matters because the AST path in the extension is
 broken and unlikely to be repaired soon.
 
-**Shipped in engine 0.2.0: S1, S2, S5, S6, S7, S8, S9.**
-**Deferred: S3, S4** — see the note below the table.
+**Shipped in engine 0.3.0: S1, S2, S3b, S5, S6, S7, S8, S9.**
+**Deferred: S3a, S4** — see the note below the table.
 
 | ID | Check | Detects | Severity | Status |
 |---|---|---|---|---|
 | **S1** | `request.security(...)` whose expression lacks `[n]` and has no explicit `lookahead` | Repainting | Warning | ✅ shipped |
 | **S2** | `ta.*(...)` inside a ternary or an indented `if` body | Corrupted indicator state | Warning | ✅ shipped |
-| **S3** | `x := x <op> ...` where `x` was declared without `var`/`varip` | Accumulator resets every bar | Warning | ⬜ **deferred** |
+| **S3a** | `x := x <op> ...` where `x` was declared without `var`/`varip` | Accumulator resets every bar | Warning | ⬜ **deferred** |
+| **S3b** | `var x = <seed>` re-accumulated inside a `for`/`while` body with no reset before the loop | Accumulator grows unbounded across bars | Warning | ✅ shipped |
 | **S4** | Assignment (`:=`) on the right-hand side of `and`/`or` | v6 lazy-evaluation trap | Warning | ⬜ **deferred** |
 | **S5** | Count of `plot`/`plotshape`/`plotchar`/`plotcandle`/`plotbar`/`hline` > 64 | Compile failure on TradingView | Error | ✅ shipped |
 | **S6** | Count of `request.*()` calls > 40 | Compile failure on TradingView | Error | ✅ shipped |
@@ -97,15 +98,48 @@ broken and unlikely to be repaired soon.
 | **S8** | Function definition (`f(x) =>`) at non-zero indentation | Compile failure | Error | ✅ shipped |
 | **S9** | `strategy.entry` present with no `strategy.exit` / `close` / `close_all` | Unbounded risk | Warning | ✅ shipped |
 
-### Why S3 and S4 are deferred
+### S3 has two halves, and the second is the dangerous one
 
-Both are heuristics about **intent** rather than facts about syntax.
+The original spec described only S3a: an accumulator **missing** `var`, which
+resets every bar. Field testing found the inverse, which nothing caught:
 
-S3 flags `x := x + 1` where `x` lacks `var`. That is only a defect if accumulation
-was wanted — and the pattern is indistinguishable from a deliberate per-bar
-recompute. S4 flags an assignment inside `and`/`or`, which is a genuine v6
-lazy-evaluation trap but rare enough that the false-positive risk may outweigh the
-catch.
+```pine
+var float sum = 0.0
+for i = 0 to 9
+    sum := sum + close[i]     // var persists; the loop re-adds 10 closes EVERY bar
+```
+
+The author wanted "sum of the last 10 closes". They get a number that grows for the
+life of the chart. Same shape with `while`:
+
+```pine
+var int counter = 0
+while counter < 5
+    counter += 1              // on bar 2 counter is already 5; the loop never runs
+```
+
+**S3b is the more damaging half.** S3a produces a value that is obviously constant,
+which a chart reveals immediately. S3b produces a plausible-looking number that
+drifts slowly, which is exactly the defect that survives a backtest.
+
+S3b is also the more *tractable* half: `var` declared, re-assigned to itself inside
+a loop body, with no reset statement between the declaration and the loop. That is
+a structural pattern, not an inference about intent — which is why it shipped and
+S3a did not.
+
+**Shipped in engine 0.3.0** with seven paired tests and two exemptions that keep it
+quiet on correct code: a reset before the loop (a `var` reused as a buffer), and a
+run-once guard (`barstate.isfirst`, `bar_index == 0`) for table-building on bar one.
+It fires twice across 24 committed `.pine` files, and both are real defects.
+
+### Why S3 and S4 remain deferred
+
+Both are still heuristics about **intent** rather than facts about syntax.
+
+S3a flags `x := x + 1` where `x` lacks `var`, which is indistinguishable from a
+deliberate per-bar recompute. S4 flags an assignment inside `and`/`or`, a genuine
+v6 lazy-evaluation trap but rare enough that the false-positive risk may outweigh
+the catch.
 
 They were sequenced last for exactly this reason: cutting them costs nothing,
 whereas discovering the problem after three other check groups had merged around
@@ -173,4 +207,9 @@ advice is the commoditised half of this problem.
 - [x] Extension consumes it; VSIX extracted and packaged code executed
 - [x] Plugin consumes it; MCP tests cover S1 and S7
 - [x] Each check documented in `pinescript-validation` with its remedy
-- [ ] S3/S4 decided — measure false-positive rate, then ship or drop
+- [x] **S3b implemented** — engine 0.3.0. Found in the field on 2026-08-08 after
+      every layer missed it; 7 paired tests, 0 false positives across the corpus
+- [x] Every `docAnchor` resolves to a real skill heading — `make anchors`.
+      Four of nine were dead, including S1's, because the engine owned the anchor
+      and this repo owned the heading and nothing made them agree
+- [ ] S3a/S4 decided — measure false-positive rate, then ship or drop

@@ -7,6 +7,58 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.3] - 2026-08-08
+
+### The accumulator guidance was the inverse of the bug
+
+A user hit a defect the whole stack missed: a `var` total re-accumulated by a loop
+on every bar, which grows for the life of the chart. The skills' advice — "declare
+accumulators `var` so they persist" — is correct for a running total and is exactly
+what produces this. Run the old checklist against the broken code and every item
+ticks.
+
+No skill mentioned `for` or `while` anywhere, so a reader had nothing to catch the
+loop shapes with. All three skills now cover both directions and ask the question
+that decides it: **does the accumulator's lifetime match its meaning?** "Total so
+far" wants `var`; "total for this bar" must not have it.
+
+Now detected as **S3** in `pinescript-v6-validator@0.3.0`, pinned here.
+
+### Honest omissions added to "What the validator CANNOT see"
+
+That table implied name-checking was covered. It is not:
+
+- **Constant and built-in-variable names are never checked.** `shape.trianglup`,
+  `color.grene` and `plot.style_circlez` all validate clean and all fail on
+  TradingView. Only *parameter* names are checked, never the values.
+  `lookup_pine_reference` covers functions only, so `found: false` for
+  `barstate.islast` means "not a function", not "not real".
+- **Re-declaring a name with `=`** is a TradingView error and passes here.
+- **`ta.*` on the right of `and`/`or`** escapes S2, because v6 short-circuits.
+
+### Gate hardening
+
+- `validate_skill_examples.py` returned 0 when the engine was absent, so a local
+  `make gate` printed "Gate passed" over **zero** validated examples. It now fails
+  unless `--allow-skip` is passed deliberately.
+- The five scaffolds advertised as "validated in CI" were opened by no script at
+  all — true by luck, not enforcement. Now validated as whole files: 31 examples,
+  5 of them scaffolds.
+- New `make anchors` resolves every semantic check's `docAnchor` against real skill
+  headings, using the **installed** engine. Four of nine were dead when it was
+  written, including S1's — the most-cited defect in Pine Script. The engine's own
+  test asserted `docAnchor.includes('#')`, which all four dead links passed.
+
+### Skills now reference each other
+
+Previously none did, so an agent that loaded `pinescript-v6` never learned the
+validated scaffolds existed two directories away. The `PostToolUse` hook is now
+documented, so agents stop redundantly re-validating after every write.
+
+Added a screenshot of Antigravity auditing a script through the plugin.
+
+---
+
 ## [0.4.2] - 2026-08-08
 
 ### Changed

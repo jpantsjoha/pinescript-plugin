@@ -23,3 +23,11 @@ __pycache__/
 # Generated images land in ~/generated-images/ first; only reviewed assets are
 # committed. The prompt that produced them IS tracked (assets/prompts/) — an image
 # with no recorded prompt cannot be reproduced or improved.
+
+# Credentials — never commit. `npm install ./x.tgz`, `npm config set` and `npm login`
+# can all write a repo-local .npmrc containing an auth token, which is how a publish
+# credential ends up in a public repo by accident. Global config lives in ~/.npmrc.
+.npmrc
+.env
+.env.*
+!.env.example
