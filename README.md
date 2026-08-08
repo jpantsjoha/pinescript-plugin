@@ -10,137 +10,119 @@
 
 # pinescript-plugin
 
-> **Install once, and your coding agent stops guessing at Pine Script — it gets a
-> real validator, the actual v6 reference including overloads, and a hook that
-> checks every `.pine` file it writes before you ever see it.**
+> **Your agent writes Pine Script it cannot check. This gives it a checker.**
 
-> **The only Pine tooling that catches code which COMPILES and is still wrong —
-> repainting, `ta.*` history gaps, scope errors, platform limits.**
+> **Seven of these checks catch code that compiles perfectly and still loses money.**
 
-Pine Script skill files are easy to write and easy to get wrong. What they cannot
-do is check anything. This plugin ships the checker — the same engine running
-inside a VS Code extension with 1,400+ installs — so an agent verifies its own
-work instead of handing you code that reads well and fails on the chart.
+Every AI Pine Script tool on the market ships advice. None of them can verify a
+single line they produce. That gap is the whole reason this exists.
 
----
+## The problem, precisely
 
-## The problem
-
-Ask any coding agent for a TradingView indicator and you get code that looks
-right, reads fluently, and does not compile.
+Ask any coding agent for a TradingView indicator. You get code that reads
+fluently and does not compile.
 
 ```pine
 // Confident. Fluent. Four compile errors.
-l = line.new(x1=1, y1=2, x2=3, y2=4, colour=color.red)   // it's `color`, not `colour`
-plotshape(cond, shape=shape.triangleup)                   // it's `style=`, not `shape=`
-v = math.clamp(x, 0, 1)                                   // math.clamp doesn't exist in Pine
-b = box.new(left=1, top=2, right=3, bottom=4, textalign=text.align_left)  // box uses text_halign
+l = line.new(x1=1, y1=2, x2=3, y2=4, colour=color.red)   // it is `color`
+plotshape(cond, shape=shape.triangleup)                   // it is `style=`
+v = math.clamp(x, 0, 1)                                   // no such function
+b = box.new(left=1, top=2, right=3, bottom=4, textalign=text.align_left)
 ```
 
-Three things make Pine unusually hostile to a language model:
+Three properties of Pine make this near-certain:
 
-1. **Parameter names are not guessable.** `label.new` takes `textalign`. `box.new`
-   takes `text_halign`. Nothing about either name implies the other.
+1. **Parameter names are not guessable.** `label.new` takes `textalign`.
+   `box.new` takes `text_halign`. Nothing about either implies the other.
 2. **Several functions have two valid call forms.** `line.new`, `label.new` and
-   `box.new` each accept a `chart.point` *or* independent coordinates. A model
-   that has only seen one form will insist the other is wrong.
-3. **The language keeps moving.** TradingView shipped `request.footprint()`,
-   multiline strings and `calc_on_every_history_tick` in the last eighteen months —
-   and *removed* the wrapped-line indentation rules in December 2025. Training data
-   goes stale in both directions.
+   `box.new` each accept a `chart.point` or independent coordinates. A model that
+   has seen one will insist the other is wrong.
+3. **The language moves quarterly, in both directions.** TradingView added
+   `request.footprint()` and multiline strings, then *removed* the wrapped-line
+   indentation rules in December 2025. Training data goes stale coming and going.
 
-The result is a loop you have probably lived: the agent writes Pine, you paste it
-into TradingView, it fails, you paste the error back, it guesses again.
+Sparse training data is the root cause, and TradingView say so plainly: the corpus
+for Python is large enough to generate working code, and for Pine it is not.
 
-## What this does about it
+## The expensive half nobody addresses
 
-Gives the agent a **checker and a reference**, so it stops guessing.
+Compile errors cost a minute. The real damage is code that compiles and is still
+wrong: a repainting signal, a `ta.*` call inside a conditional quietly corrupting
+its own history, a strategy that opens positions and never closes them.
 
-### MCP tools
-
-| Tool | What it does |
-|---|---|
-| `validate_pine_script` | Runs the real validator, returns structured diagnostics with line numbers |
-| `lookup_pine_reference` | The actual signature of any v6 built-in — parameters, **and every overload** |
-
-### Skills
-
-| Skill | Covers |
-|---|---|
-| `pinescript-v6` | Execution model, overloaded constructors, anti-repainting, platform limits, API through July 2026 |
-| `pinescript-validation` | Every diagnostic class and its deterministic fix — plus what the validator *cannot* see |
-| `pinescript-indicator` | Plotting, drawing objects, tables, alerts. Three CI-validated scaffolds |
-| `pinescript-strategy` | Entries, exits, risk sizing, the five traps that make a backtest lie, webhook payloads |
-
-### Hook
-
-Every `.pine` file the agent edits is validated automatically. Not "remember to
-check your work" — an actual control.
-
-The loop closes inside the conversation instead of across TradingView's compiler.
-
-## Two kinds of wrong
-
-Pine breaks in two distinct ways, and most tooling conflates them.
-
-**Syntactic** — hallucinated functions, wrong parameter names, v4/v5/v6 mixed
-together. Caused by a thin training corpus and a language that changes quarterly.
-Costs a minute. **Solved here.**
-
-**Semantic** — code that compiles perfectly and is still wrong. A repainting
-signal. `ta.*` inside a conditional, silently corrupting its own history. An
-accumulator missing `var`, resetting every bar. Costs a funded account:
-
-> "one overlooked mistake — like a repainting signal or scope error — can
-> invalidate months of backtesting"
+> "One overlooked mistake, like a repainting signal or scope error, can invalidate
+> months of backtesting."
 > — [PickMyTrade](https://blog.pickmytrade.io/debugging-tradingview-strategies-10-common-pine-script-mistakes/)
 
-Prose cannot fix semantic errors, because the author already believes they are
-right. **Nine semantic checks are specified in [SPEC.md](./SPEC.md)** and being
-implemented in the engine — repainting detection, `ta.*`-in-conditional, accumulator
-state, lazy-evaluation traps, and the platform limits TradingView enforces but no
-local tool counts.
+Prose cannot fix that class of bug, because the author already believes the code
+is right. **Detection can.** Seven checks ship today:
+
+| ID | Catches | Severity |
+|---|---|---|
+| S1 | `request.security()` reading the current, still-forming bar | Warning |
+| S2 | `ta.*` inside a ternary or block, leaving gaps in its history | Warning |
+| S5 / S6 | Over 64 plots or 40 `request.*()` calls | Error |
+| S7 | `plot` / `bgcolor` / `fill` outside global scope | Error |
+| S8 | A function defined inside a block | Error |
+| S9 | `strategy.entry` with no exit anywhere in the script | Warning |
+
+Considered one and decided it is fine? Silence it:
+
+```pine
+d = request.security(syminfo.tickerid, "D", close)   // pine-ignore: S1
+```
+
+Syntactic errors are never suppressible. A compile failure is a fact, not a
+judgement.
+
+## What you get
+
+| Component | Does |
+|---|---|
+| `validate_pine_script` | Runs every check, returns diagnostics with line numbers |
+| `lookup_pine_reference` | The real signature of any v6 built-in, overloads included |
+| 4 skills | Language rules, the fix loop, indicator and strategy patterns |
+| 1 hook | Validates every `.pine` file the agent edits, automatically |
+
+## Why trust it
+
+The engine is
+[`pinescript-v6-validator`](https://www.npmjs.com/package/pinescript-v6-validator),
+the same code running inside a VS Code extension with 1,400+ installs at 4.45
+stars. Your agent and your editor read from one implementation, so they cannot
+disagree about a file.
+
+Behind it: 457 function signatures from the official reference, a hand-maintained
+layer for everything TradingView shipped since, explicit overload modelling, and a
+golden corpus proven able to fail. Reintroduce a fixed bug and the build goes red.
+
+Every Pine example in every skill is extracted and run through that validator in
+CI. A skill shipping code that fails its own checker would be worse than no skill,
+so the build blocks it.
 
 ## Plugin, or VS Code extension?
 
-Both — and the distinction matters, because it is what stops the two disagreeing.
+Both. The distinction matters, because getting it wrong is what makes two tools
+contradict each other.
 
 ```
-        pinescript-v6-validator  (npm)     ← detection lives here, once
-                     │
-        ┌────────────┴────────────┐
-        ▼                         ▼
+        pinescript-v6-validator  (npm)     detection lives here, once
+                     |
+        +------------+------------+
+        v                         v
   VS Code extension          this plugin
   surface: humans            surface: agents
   squiggles, hover           MCP, skills, hook
 ```
 
-A check is written **once**, in the engine. The extension renders it as a squiggle;
-this plugin returns it to the model. Neither reimplements it — the moment the same
+A check is written **once**, in the engine. The extension renders it as a squiggle.
+This plugin returns it to the model. Neither reimplements it. The moment the same
 rule exists twice they drift, and a drifted rule means your agent and your editor
 disagree about the same file.
 
-Skills are plugin-only: prose is useless in an editor and is the whole point for an
-agent. Editor affordances — formatting, go-to-definition — stay in the extension.
-
-## Why this one
-
-**It shares an engine with a published VS Code extension.** The validator here is
-the same one running in
-[pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension)
-— 1,400+ installs, 4.45★. So the agent and your editor cannot disagree about a file.
-
-That engine carries:
-
-- **457 function signatures** scraped from the official v6 reference, plus a
-  hand-maintained layer for everything TradingView shipped since
-- **Explicit overload modelling** — a call is valid if it satisfies *any* form
-- **A golden corpus** of scripts verified to compile on TradingView, asserted to
-  produce zero errors on every commit
-
-Every Pine example in every skill is extracted and run through that validator in
-CI. A skill shipping code that fails its own checker would make the whole thing
-worthless, so the build blocks it.
+Skills are plugin-only. Prose is useless in an editor and is the whole point for
+an agent. Editor affordances such as formatting and go-to-definition stay in the
+extension.
 
 ## Install
 
@@ -232,6 +214,22 @@ tests/                         MCP behaviour tests
 packaging consistency, skill frontmatter contracts, reference-URL resolution,
 embedded Pine validation, and the MCP behaviour tests.
 
+## What this does not do yet
+
+Stating it plainly beats you finding out.
+
+- **Two checks are specified but not built.** S3 (accumulator without `var`) and
+  S4 (assignment inside `and`/`or`) are heuristics about intent. Until their
+  false-positive rate measures at zero they stay out. Watch for both yourself.
+- **No type inference.** A `series` value passed where `simple` is required
+  compiles here and fails on TradingView. Fixing that needs an AST the engine
+  does not have.
+- **Hooks work in Claude Code only.** Antigravity, Codex and Kimi get the skills
+  and the MCP tools. Their harnesses do not load the hook.
+- **A clean validation is not proof the script is right.** It means no known
+  defect matched. Backtest assumptions, unconfirmed-bar entries and position
+  sizing remain yours to check.
+
 ## Related projects
 
 | Project | What it is |
@@ -241,16 +239,20 @@ embedded Pine validation, and the MCP behaviour tests.
 
 ### Prior art
 
-[TradersPost Pine Script plugin](https://www.claudepluginhub.com/plugins/traderspost-pinescript)
-covers similar territory and is worth a look. The distinction claimed here is
-narrow and checkable: a shared validation engine with a published extension, and a
-CI gate that runs every documented example through it.
+[TradersPost/pinescript-agents](https://github.com/TradersPost/pinescript-agents)
+covers similar ground with seven skills and is worth a look.
+[double232/pinescript-skill](https://github.com/double232/pinescript-skill) is one
+deep skill with a good catalogue of hard language constraints.
+
+The claim here is narrow and checkable. Both are prose. Neither can verify a line
+of the Pine it produces. This ships the checker.
 
 ## Contributing
 
 Found Pine that this validator gets wrong? That is the most valuable bug report
-available — a false positive is worse than a missed error, because it puts red
-marks on correct code. Open an issue with the smallest script that reproduces it.
+available. A false positive is worse than a missed error, because it puts red
+marks on correct code and teaches people to ignore the tool. Open an issue with
+the smallest script that reproduces it.
 
 ## Author
 
