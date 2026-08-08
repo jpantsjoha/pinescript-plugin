@@ -3,7 +3,7 @@ name: pinescript-validation
 description: "Diagnose and fix Pine Script v6 errors deterministically — read each validator diagnostic, apply the known fix, re-validate. Covers every diagnostic class the validator emits, what it cannot see, and how to work through an existing codebase of broken .pine files. Use when a Pine script fails to compile, when TradingView reports an error, when validate_pine_script returns diagnostics, when auditing or migrating an existing Pine codebase, or when asked to fix, debug or repair Pine Script."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.1.0"
+  "pinescript-plugin/version": "0.4.1"
   "pinescript-plugin/triggers": "pine script error, fix pine script, debug pine, compile error, validate pine, tradingview error, script won't compile, audit pine codebase, migrate pine"
   "pinescript-plugin/pine-version": "v6"
 ---
@@ -98,13 +98,17 @@ These are **warnings about intent**, not compile errors. Each carries an id.
 |---|---|---|
 | **S1** | `request.security()` reads the current, still-forming bar | Use `close[1]`, or pass `lookahead=barmerge.lookahead_off` to say you meant it |
 | **S2** | `ta.*` called inside a ternary or block | Compute it unconditionally, then select the result |
-| **S3** | Accumulator reassigned without `var` | Declare it `var` so it persists across bars |
-| **S4** | Assignment inside `and`/`or` | v6 short-circuits; move the assignment out |
+| ~~S3~~ | *(specified, not implemented — check by eye)* | Declare accumulators `var` so they persist across bars |
+| ~~S4~~ | *(specified, not implemented — check by eye)* | v6 short-circuits `and`/`or`; never hide an assignment there |
 | **S5** | More than 64 plot calls | Remove some — TradingView will reject the script |
 | **S6** | More than 40 `request.*()` calls | Consolidate — same hard limit |
 | **S7** | `plot`/`bgcolor`/`fill` outside global scope | Move it out and pass `na` to hide it conditionally |
 | **S8** | Function defined inside a block | Move it to root indentation |
 | **S9** | `strategy.entry` with no exit anywhere | Add `strategy.exit` or `strategy.close` |
+
+**Seven checks ship: S1, S2, S5-S9.** S3 and S4 are specified but deliberately not
+implemented — both are heuristics about intent, and the false-positive risk is
+unresolved. Watch for them yourself.
 
 **S5-S8 are errors** — TradingView will reject the script. The rest are warnings.
 
@@ -125,7 +129,7 @@ Be explicit about this. A clean run is not proof the script is correct.
 
 | Not checked | Consequence |
 |---|---|
-| **Runtime logic beyond S3/S4** | Most state bugs still need a human read |
+| **Accumulator and short-circuit bugs** | S3/S4 are unimplemented — a missing `var` still validates clean |
 | **Type compatibility** | `series` where `simple` is required compiles here, fails on TradingView |
 | **Script size** | 80k token limit — counted by TradingView, not here |
 | **Series semantics** | `ta.*` inside a conditional validates but corrupts state |
@@ -136,7 +140,7 @@ that cost money rather than time.
 ## Working through an existing codebase
 
 ```bash
-node validate-cli.js path/to/*.pine        # batch, exit 1 if any severity-0 error
+validate_pine_script                        # the MCP tool — batch by calling per file
 ```
 
 1. **Triage by diagnostic class, not by file.** One wrong parameter name usually

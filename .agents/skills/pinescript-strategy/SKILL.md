@@ -3,7 +3,7 @@ name: pinescript-strategy
 description: "Write TradingView Pine Script v6 strategies that behave the same live as in backtest — entries, exits, position sizing, commission and slippage, and the repainting and lookahead traps that make a backtest lie. Includes validated scaffolds and webhook alert payloads for broker automation. Use when asked to write, build or backtest a trading strategy; to add entries, exits, stops or take-profits; when a strategy performs differently live than in testing; or to automate alerts to a broker."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.2.0"
+  "pinescript-plugin/version": "0.4.1"
   "pinescript-plugin/triggers": "write a strategy, trading strategy, backtest, strategy.entry, strategy.exit, stop loss, take profit, position sizing, repainting, backtest doesn't match live, webhook alert, automate to broker"
   "pinescript-plugin/pine-version": "v6"
 ---
@@ -18,12 +18,17 @@ Practitioners are blunt about this: *"one overlooked mistake — like a repainti
 signal or scope error — can invalidate months of backtesting."*
 ([PickMyTrade](https://blog.pickmytrade.io/debugging-tradingview-strategies-10-common-pine-script-mistakes/))
 
-The validator catches syntax. **It cannot catch any of the traps below.** Check
-them by eye, every time, before anyone risks capital.
+The validator now catches three of the five traps below — **S1** (repainting),
+**S2** (`ta.*` in a conditional) and **S9** (entry with no exit). Call
+`validate_pine_script` and act on those findings.
+
+The other two — unconfirmed-bar entries and optimistic fill assumptions — are
+invisible to any static check. **Read for those by eye, every time, before anyone
+risks capital.**
 
 ## The five traps, in order of cost
 
-### 1. Repainting higher-timeframe data
+### 1. Repainting higher-timeframe data — detected as **S1**
 
 ```pine
 // WRONG — the current daily bar is still forming; history and live disagree
@@ -36,7 +41,7 @@ d = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahe
 `lookahead_on` is worse than useless in a strategy: it lets history see data that
 did not exist yet, so the backtest is fiction.
 
-### 2. Acting on an unconfirmed bar
+### 2. Acting on an unconfirmed bar — NOT detectable
 
 Intrabar, `close` moves. A condition true mid-bar may be false at the close, so the
 signal appears and vanishes.
@@ -49,7 +54,7 @@ if barstate.isconfirmed and longCondition
 
 Or set `calc_on_every_tick=false` (the default) and leave it alone.
 
-### 3. `ta.*` inside a conditional
+### 3. `ta.*` inside a conditional — detected as **S2**
 
 ```pine
 // WRONG — ta.rsi only advances when the branch is taken; its state is corrupted
@@ -82,7 +87,7 @@ if tradeClosed and profitable
 v6 introduced short-circuit evaluation. Any assignment tucked into the right-hand
 side of `and`/`or` will sometimes not run.
 
-### 5. Optimistic fills
+### 5. Optimistic fills — NOT detectable
 
 Default backtest assumptions are generous. State them explicitly:
 
@@ -113,7 +118,8 @@ strategy.close_all(comment="Flat")
 - `strategy.entry` **reverses** an opposing position by default. To avoid that, close first.
 - `strategy.exit` needs `from_entry` matching the entry `id`, or it attaches to everything.
 - An entry with no exit is unbounded risk. Every `strategy.entry` needs a matching
-  `strategy.exit` or `strategy.close`.
+  `strategy.exit` or `strategy.close` — detected as **S9**. Note `strategy.cancel`
+  withdraws a *pending order*; it does not close a position and does not count.
 - `pyramiding` defaults to 0 — additional same-direction entries are ignored unless you raise it.
 
 ## Stops and targets

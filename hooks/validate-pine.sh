@@ -20,20 +20,39 @@ esac
 
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Same resolution order as the MCP server.
-for base in "${PINESCRIPT_VALIDATOR:-}" \
-            "$PLUGIN_ROOT/../pinescript-vscode-extension" \
-            "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Documents/workspaces/pinescript-vscode-extension"; do
+# The npm engine FIRST, matching the MCP server. This previously tried only local
+# checkouts of the extension repo, so on any normal install the hook found nothing
+# and exited silently — while the README promised "an actual control", not
+# "remember to check your work".
+if node -e "require('pinescript-v6-validator')" >/dev/null 2>&1 \
+   || (cd "$PLUGIN_ROOT" && node -e "require('pinescript-v6-validator')" >/dev/null 2>&1); then
+  output="$(cd "$PLUGIN_ROOT" && node -e '
+    const eng = require("pinescript-v6-validator");
+    const src = require("fs").readFileSync(process.argv[1], "utf8");
+    const found = eng.applySuppressions(
+      eng.validatePineScript(src), eng.extractSuppressions(src)
+    ).filter(d => d.severity === 0);
+    if (!found.length) process.exit(0);
+    for (const d of found) console.error(`  L${d.line}:${d.column}  ${d.message}`);
+    process.exit(1);
+  ' "$file_path" 2>&1)"
+  [ $? -eq 0 ] && exit 0
+  printf 'Pine validation failed for %s\n\n%s\n' "$file_path" "$output" >&2
+  exit 2
+fi
+
+# Fallback: a local checkout of the extension, for development against an
+# unreleased engine.
+for base in "${PINESCRIPT_VALIDATOR:-}" "$PLUGIN_ROOT/../pinescript-vscode-extension"; do
   [ -n "$base" ] || continue
   if [ -f "$base/validate-cli.js" ] && [ -f "$base/dist/src/parser/accurateValidator.js" ]; then
     ENGINE="$base"; break
   fi
 done
-[ -n "${ENGINE:-}" ] || exit 0   # engine absent — stay silent rather than nag
+[ -n "${ENGINE:-}" ] || exit 0   # no engine anywhere — stay silent rather than nag
 
 output="$(cd "$ENGINE" && node validate-cli.js "$file_path" 2>&1)"
-status=$?
-[ "$status" -eq 1 ] || exit 0
+[ $? -eq 1 ] || exit 0
 
 printf 'Pine validation failed for %s\n\n%s\n' \
   "$file_path" "$(printf '%s' "$output" | sed $'s/\033\\[[0-9;]*m//g')" >&2

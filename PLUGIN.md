@@ -1,7 +1,7 @@
 ---
 name: pinescript-plugin
 description: "TradingView Pine Script v6 for coding agents, backed by a real validator rather than prose. A language skill plus an MCP server that validates Pine and returns real signatures from the official 457-function reference — including the overloads models routinely get wrong — and a hook that checks every .pine file the agent edits."
-version: "0.1.0"
+version: "0.4.1"
 ---
 
 # pinescript-plugin
@@ -10,8 +10,11 @@ version: "0.1.0"
 
 | Component | Purpose |
 |---|---|
-| `skills/pinescript-v6` | Execution model, overloaded drawing constructors, anti-repainting, platform limits, API through July 2026 |
-| MCP `validate_pine_script` | Runs both diagnostic paths — matches what the VS Code extension shows |
+| `skills/pinescript-v6` | Execution model, overloaded constructors, anti-repainting, platform limits, API through July 2026 |
+| `skills/pinescript-validation` | Every diagnostic and its deterministic fix |
+| `skills/pinescript-indicator` | Plotting, drawing objects, tables, alerts — three CI-validated scaffolds |
+| `skills/pinescript-strategy` | Entries, exits, sizing, and the traps that make a backtest lie |
+| MCP `validate_pine_script` | Runs all three diagnostic sources — matches what the VS Code extension shows |
 | MCP `lookup_pine_reference` | Real signatures, every overload, near-miss suggestions |
 
 ## The contract
@@ -38,10 +41,10 @@ proved in both directions.
 
 ## Requirements
 
-The validation engine from
-[pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension),
-built (`npm ci && npm run build`) and either adjacent to this repo or pointed at
-via `PINESCRIPT_VALIDATOR`.
+None beyond the plugin itself — the validation engine comes from
+[`pinescript-v6-validator`](https://www.npmjs.com/package/pinescript-v6-validator)
+on npm. To develop against an unreleased engine, point `PINESCRIPT_VALIDATOR` at a
+built checkout of the extension instead.
 
 ## Verification
 

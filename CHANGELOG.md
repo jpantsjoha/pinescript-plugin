@@ -7,6 +7,36 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.1] - 2026-08-08
+
+### Fixed — found by cross-harness UAT and an adversarial coherence review
+
+- **Codex discovered zero skills** while reporting a successful install.
+  `.agents/skills` was a symlink; installers copy rather than clone, so it arrived
+  empty. Now real files, kept in step by `scripts/sync_agents_skills.py` and gated.
+- **The hook never tried the npm engine.** It resolved only local checkouts of the
+  extension repo, so on any normal install it found nothing and exited silently —
+  while the README promised "an actual control".
+- `PLUGIN.md` still demanded a built checkout of the extension, contradicting the
+  README. It listed one skill when four ship, and "both diagnostic paths" when
+  there are three.
+- `pinescript-strategy` told agents the validator "cannot catch any of the traps
+  below" — two of which are now S1 and S2 and *are* caught. An agent would have
+  discounted a live finding as out of scope.
+- `pinescript-validation` documented S3 and S4 as shipping checks with remedies.
+  Neither is implemented; both are now struck through and flagged as check-by-eye.
+- Version was 0.4.0 in five manifests but 0.1.0 in `package.json`, `PLUGIN.md`,
+  the MCP server and three skill files, with no 0.4.0 changelog entry at all.
+
+## [0.4.0] - 2026-08-07
+
+### Added
+
+- MCP server surfaces semantic findings from engine 0.2.0 with `// pine-ignore`
+  honoured. Each carries a `check` field; its absence marks a syntactic diagnostic,
+  which cannot be suppressed.
+- `pinescript-validation` documents every check and its remedy.
+
 ## [0.3.0] - 2026-08-07
 
 ### Added
