@@ -1,0 +1,35 @@
+//@version=6
+// SCAFFOLD — validated in CI. Copy and modify; do not compose from memory.
+// Overlay indicator: moving averages on the price chart, with signals and alerts.
+indicator("Overlay Scaffold", shorttitle="OVL", overlay=true, max_labels_count=500)
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+fastLength = input.int(9,  "Fast length", minval=1, maxval=500, group="Moving averages")
+slowLength = input.int(21, "Slow length", minval=2, maxval=500, group="Moving averages")
+source     = input.source(close, "Source", group="Moving averages")
+showLabels = input.bool(true, "Label crossovers", group="Display")
+
+// ── Calculations — ta.* runs unconditionally, every bar ──────────────────────
+fastMa = ta.ema(source, fastLength)
+slowMa = ta.ema(source, slowLength)
+
+crossUp   = ta.crossover(fastMa, slowMa)
+crossDown = ta.crossunder(fastMa, slowMa)
+
+// ── Drawing objects, with cleanup ────────────────────────────────────────────
+if showLabels and crossUp
+    label.new(x=bar_index, y=low, text="▲", style=label.style_label_up, color=color.new(color.green, 20), textcolor=color.white, size=size.small)
+
+if showLabels and crossDown
+    label.new(x=bar_index, y=high, text="▼", style=label.style_label_down, color=color.new(color.red, 20), textcolor=color.white, size=size.small)
+
+// ── Plots — global scope, conditional via na rather than `if` ────────────────
+plot(fastMa, "Fast", color=color.new(color.aqua, 0), linewidth=2)
+plot(slowMa, "Slow", color=color.new(color.orange, 0), linewidth=2)
+plot(crossUp ? fastMa : na, "Cross up", color=color.green, style=plot.style_circles, linewidth=4)
+
+bgcolor(fastMa > slowMa ? color.new(color.green, 95) : color.new(color.red, 95))
+
+// ── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(crossUp,   title="Cross Up",   message="Fast crossed above slow, review position sizing")
+alertcondition(crossDown, title="Cross Down", message="Fast crossed below slow, consider reducing exposure")

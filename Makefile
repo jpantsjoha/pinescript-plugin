@@ -1,12 +1,12 @@
-.PHONY: gate spec manifest skills links examples mcp hooks help
+.PHONY: gate spec manifest agents skills links examples mcp hooks help
 
 PYTHON  := python3
 SCRIPTS := scripts
 
 # ─── Pre-commit gate. Install once with: make hooks ──────────────────────────
-gate: spec manifest skills links examples mcp
+gate: spec manifest agents skills links examples mcp
 	@echo ""
-	@echo "Gate passed: spec + manifest + skills + links + examples + mcp"
+	@echo "Gate passed: spec + manifest + agents + skills + links + examples + mcp"
 
 spec:
 	@echo "==> Agent Plugins 1.0.0 conformance..."
@@ -15,6 +15,10 @@ spec:
 manifest:
 	@echo "==> Multi-client packaging (Claude · Antigravity · Codex · Kimi)..."
 	@$(PYTHON) $(SCRIPTS)/validate_plugin.py
+
+agents:
+	@echo "==> .agents/skills mirror (Codex discovery)..."
+	@$(PYTHON) $(SCRIPTS)/sync_agents_skills.py
 
 skills:
 	@echo "==> SKILL.md contracts..."

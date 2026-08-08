@@ -1,0 +1,28 @@
+//@version=6
+// SCAFFOLD — validated in CI. Separate-pane oscillator with levels and fills.
+indicator("Oscillator Scaffold", shorttitle="OSC", overlay=false, precision=2)
+
+length     = input.int(14, "Length", minval=1, maxval=500)
+source     = input.source(close, "Source")
+overbought = input.int(70, "Overbought", minval=50, maxval=100)
+oversold   = input.int(30, "Oversold",   minval=0,  maxval=50)
+
+value = ta.rsi(source, length)
+
+// Levels
+obLine = hline(overbought, "Overbought", color=color.new(color.red, 50), linestyle=hline.style_dashed)
+osLine = hline(oversold,   "Oversold",   color=color.new(color.green, 50), linestyle=hline.style_dashed)
+hline(50, "Midline", color=color.new(color.gray, 70))
+
+// Fill between the bands
+fill(obLine, osLine, color=color.new(color.blue, 95), title="Band")
+
+oscColor = value > overbought ? color.red : value < oversold ? color.green : color.new(color.blue, 0)
+plot(value, "Value", color=oscColor, linewidth=2)
+
+// Divergence-style markers, plotted conditionally with na
+plot(value > overbought ? value : na, "OB", color=color.red,   style=plot.style_circles, linewidth=3)
+plot(value < oversold   ? value : na, "OS", color=color.green, style=plot.style_circles, linewidth=3)
+
+alertcondition(ta.crossunder(value, overbought), title="Left overbought", message="Oscillator dropped out of overbought, momentum may be turning")
+alertcondition(ta.crossover(value, oversold),    title="Left oversold",   message="Oscillator rose out of oversold, momentum may be turning")
