@@ -3,7 +3,7 @@ name: pinescript-indicator
 description: "Generate working TradingView Pine Script v6 indicators — plotting, drawing objects, tables, alerts, inputs and the plot/object limits that break scripts at scale. Provides validated scaffolds to start from rather than composing from memory. Use when asked to write, create or build an indicator, study, oscillator or overlay; to plot something on a chart; to add labels, lines, boxes or a table; or to add alerts to an indicator."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.4.1"
+  "pinescript-plugin/version": "0.4.2"
   "pinescript-plugin/triggers": "write an indicator, create indicator, tradingview study, oscillator, overlay, plot on chart, add labels, draw lines, add a table, alertcondition, pine indicator"
   "pinescript-plugin/pine-version": "v6"
 ---

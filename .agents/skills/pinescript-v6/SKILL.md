@@ -3,7 +3,7 @@ name: pinescript-v6
 description: "Write and debug TradingView Pine Script v6 correctly. Covers the execution model, the v6 type system, overloaded drawing constructors, anti-repainting with request.security, and the API TradingView shipped through 2026. Validate every script before claiming it works. Use when the user mentions: pine script, pinescript, tradingview indicator, tradingview strategy, .pine file, write an indicator, backtest a strategy, plot on chart, alertcondition, request.security, repainting."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.4.1"
+  "pinescript-plugin/version": "0.4.2"
   "pinescript-plugin/triggers": "pine script, pinescript, tradingview indicator, tradingview strategy, .pine file, write an indicator, backtest a strategy, plot on chart, alertcondition, request.security, repainting"
   "pinescript-plugin/pine-version": "v6"
 ---

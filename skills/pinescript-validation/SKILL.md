@@ -3,7 +3,7 @@ name: pinescript-validation
 description: "Diagnose and fix Pine Script v6 errors deterministically — read each validator diagnostic, apply the known fix, re-validate. Covers every diagnostic class the validator emits, what it cannot see, and how to work through an existing codebase of broken .pine files. Use when a Pine script fails to compile, when TradingView reports an error, when validate_pine_script returns diagnostics, when auditing or migrating an existing Pine codebase, or when asked to fix, debug or repair Pine Script."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.4.1"
+  "pinescript-plugin/version": "0.4.2"
   "pinescript-plugin/triggers": "pine script error, fix pine script, debug pine, compile error, validate pine, tradingview error, script won't compile, audit pine codebase, migrate pine"
   "pinescript-plugin/pine-version": "v6"
 ---

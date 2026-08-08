@@ -3,7 +3,7 @@ name: pinescript-strategy
 description: "Write TradingView Pine Script v6 strategies that behave the same live as in backtest — entries, exits, position sizing, commission and slippage, and the repainting and lookahead traps that make a backtest lie. Includes validated scaffolds and webhook alert payloads for broker automation. Use when asked to write, build or backtest a trading strategy; to add entries, exits, stops or take-profits; when a strategy performs differently live than in testing; or to automate alerts to a broker."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.4.1"
+  "pinescript-plugin/version": "0.4.2"
   "pinescript-plugin/triggers": "write a strategy, trading strategy, backtest, strategy.entry, strategy.exit, stop loss, take profit, position sizing, repainting, backtest doesn't match live, webhook alert, automate to broker"
   "pinescript-plugin/pine-version": "v6"
 ---

@@ -233,7 +233,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: 'pinescript', version: '0.4.1' },
+  { name: 'pinescript', version: '0.4.2' },
   { capabilities: { tools: {} } }
 );
 

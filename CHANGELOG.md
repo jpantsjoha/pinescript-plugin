@@ -7,6 +7,22 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.2] - 2026-08-08
+
+### Changed
+
+- Requires `pinescript-v6-validator@^0.2.1`, which repairs three checks that each
+  worked on their happy path and silently missed a shape occurring constantly in
+  real code:
+  - **S1** skipped **every multi-line `request.security()`**. Wrapping is the
+    normal formatting for that function, so most real repainting went undetected.
+  - **S2** checked only the *true* branch of a ternary.
+  - **S9** counted `strategy.cancel` as an exit. Cancel withdraws a pending order;
+    it does not close a position.
+
+  v0.4.1 was tagged before that engine fix landed, so hub installs picked up the
+  broken checks. This release exists to correct that.
+
 ## [0.4.1] - 2026-08-08
 
 ### Fixed — found by cross-harness UAT and an adversarial coherence review
