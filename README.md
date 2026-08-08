@@ -1,12 +1,26 @@
-<img src="assets/mascot.png" alt="pinescript-plugin mascot: a pine tree inspecting a candlestick chart through a magnifying glass" width="150" align="right" />
+<p align="center">
+  <img src="assets/hero.png" alt="pinescript-plugin — Pine Script v6 for coding agents. Backed by a real validator, not prose." width="100%">
+</p>
+
+[![Listed on ClaudePluginHub](https://www.claudepluginhub.com/badge/jpantsjoha-pinescript-plugin)](https://www.claudepluginhub.com/plugins/jpantsjoha-pinescript-plugin?ref=badge)
+[![Gate](https://github.com/jpantsjoha/pinescript-plugin/actions/workflows/gate.yml/badge.svg)](https://github.com/jpantsjoha/pinescript-plugin/actions/workflows/gate.yml)
+[![Agent Plugins 1.0.0](https://img.shields.io/badge/Agent%20Plugins-1.0.0-blue)](https://agent-plugins.org/specification)
+[![npm](https://img.shields.io/npm/v/pinescript-v6-validator?label=engine)](https://www.npmjs.com/package/pinescript-v6-validator)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 # pinescript-plugin
 
-> Pine Script v6 for coding agents — backed by a real validator, not prose.
+> **Install once, and your coding agent stops guessing at Pine Script — it gets a
+> real validator, the actual v6 reference including overloads, and a hook that
+> checks every `.pine` file it writes before you ever see it.**
 
-[![Gate](https://github.com/jpantsjoha/pinescript-plugin/actions/workflows/gate.yml/badge.svg)](https://github.com/jpantsjoha/pinescript-plugin/actions/workflows/gate.yml)
-[![Agent Plugins 1.0.0](https://img.shields.io/badge/Agent%20Plugins-1.0.0-blue)](https://agent-plugins.org/specification)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+> **The only Pine tooling that catches code which COMPILES and is still wrong —
+> repainting, `ta.*` history gaps, scope errors, platform limits.**
+
+Pine Script skill files are easy to write and easy to get wrong. What they cannot
+do is check anything. This plugin ships the checker — the same engine running
+inside a VS Code extension with 1,400+ installs — so an agent verifies its own
+work instead of handing you code that reads well and fails on the chart.
 
 ---
 
@@ -130,33 +144,76 @@ worthless, so the build blocks it.
 
 ## Install
 
-```bash
-/plugin marketplace add jpantsjoha/pinescript-plugin
-/plugin install pinescript-plugin
-```
-
-The validation engine comes from
+One plugin, four coding assistants. Skills live in `skills/`; each harness reads
+its own manifest. The validation engine comes from
 [`pinescript-v6-validator`](https://www.npmjs.com/package/pinescript-v6-validator)
-on npm — no separate checkout needed.
+on npm — **no separate checkout required**.
 
-For Claude Code:
+**Claude Code**
 
-```bash
+```text
 /plugin marketplace add jpantsjoha/pinescript-plugin
-/plugin install pinescript-plugin
+/plugin install pinescript-plugin@pinescript-plugin-marketplace
 ```
 
-It also packages for **Antigravity/Gemini** (`gemini-extension.json` + `GEMINI.md`),
-**Codex** (`.agents/skills/` + `AGENTS.md`) and **Kimi** (`.kimi-plugin/`). All four
-manifests are checked for consistency by `make gate`.
-
-To develop against an unreleased engine, point at a built checkout instead:
+**Antigravity (Gemini)**
 
 ```bash
-export PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension
+agy plugin install https://github.com/jpantsjoha/pinescript-plugin
 ```
 
-> **Status: early.** Four skills so far. See [CHANGELOG](./CHANGELOG.md).
+**Codex**
+
+```bash
+codex plugin marketplace add https://github.com/jpantsjoha/pinescript-plugin
+codex plugin add pinescript-plugin@pinescript-plugin-marketplace
+```
+
+Codex reads `AGENTS.md` as its always-on contract and discovers skills under
+`.agents/skills/`.
+
+**Kimi Code**
+
+Kimi reads `.kimi-plugin/plugin.json`. Point it at the skills directly:
+
+```bash
+git clone https://github.com/jpantsjoha/pinescript-plugin
+kimi --skills-dir ./pinescript-plugin/skills
+```
+
+### Verify the install
+
+Ask your agent to validate something deliberately wrong:
+
+```pine
+//@version=6
+indicator("check")
+l = line.new(x1=1, y1=2, x2=3, y2=4, colour=color.red)
+```
+
+You should get **`No parameter named 'colour' in 'line.new'`**. If instead you are
+told the script is fine, the MCP server is not connected — check your harness's
+MCP configuration.
+
+### Harness support
+
+Every row below was verified by installing and running the tools, not by reading a
+manifest.
+
+| | Skills | MCP tools | Hook |
+|---|:---:|:---:|:---:|
+| Claude Code | ✅ | ✅ | ✅ |
+| Antigravity | ✅ | ✅ | — *(harness has no hook support)* |
+| Codex | ✅ | ✅ | — |
+| Kimi Code | ✅ *(via `--skills-dir`)* | ✅ | — |
+
+### Working on the plugin itself
+
+```bash
+git clone https://github.com/jpantsjoha/pinescript-plugin
+cd pinescript-plugin && npm install && make hooks
+make gate    # spec · packaging · skills · links · Pine examples · MCP tests
+```
 
 ## What's in it
 
