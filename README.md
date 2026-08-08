@@ -189,6 +189,16 @@ manifest.
 | Codex | ✅ | ✅ | — |
 | Kimi Code | ✅ *(via `--skills-dir`)* | ✅ | — |
 
+Antigravity auditing a script through the plugin's validator, and finding the
+repainting the author did not:
+
+![Antigravity running the plugin's validator and reporting an S1 repainting finding](assets/antigravity-audit.png)
+
+Note what the model does with the result. It does not paraphrase a warning: it
+names the check, states the mechanism — reading a still-forming higher-timeframe
+bar — and gives the specific edit. That is the difference between a skill that
+explains a diagnostic and one that merely mentions it.
+
 ### Working on the plugin itself
 
 ```bash
