@@ -67,7 +67,7 @@ v = useRsi ? rsiValue : na
 
 Compiles. Silently wrong. The indicator's internal history has gaps.
 
-### 4. Accumulators without `var` — and the lazy-evaluation trap
+### 4. Accumulator lifetime — both directions are wrong
 
 ```pine
 // WRONG — resets every bar, so it is always 1
@@ -78,11 +78,47 @@ wins := wins + 1
 // whenever the left side is false
 ok = condition and (wins := wins + 1) > 0
 
-// RIGHT — persist with var, and never hide state changes inside and/or
+// RIGHT — persist with var, and never hide state changes inside and/or.
+// The same applies to ta.*: `x and ta.rsi(close,14) > 50` is a CONDITIONAL ta.* call,
+// because v6 short-circuits. Compute it on its own line first.
 var int wins = 0
 if tradeClosed and profitable
     wins := wins + 1
 ```
+
+**Now the inverse, which is more common and more expensive.** `var` persists, so a
+loop that re-accumulates every bar without a reset grows without bound:
+
+```pine
+// WRONG — var means this is never cleared; it adds 10 more closes every bar
+var float sum = 0.0
+for i = 0 to 9
+    sum := sum + close[i]
+
+// RIGHT — a per-bar total must NOT be var
+float sum = 0.0
+for i = 0 to 9
+    sum += close[i]
+
+// ALSO RIGHT — keep var, but reset before the loop
+var float sum = 0.0
+sum := 0.0
+for i = 0 to 9
+    sum += close[i]
+```
+
+Same trap with `while`, and here it is silent rather than wrong:
+
+```pine
+// WRONG — on bar 2 counter is already 5, so the body never runs again
+var int counter = 0
+while counter < 5
+    counter += 1
+```
+
+**The question to ask of every accumulator: does its lifetime match its meaning?**
+"Total so far" wants `var`. "Total for this bar" must not have it. The validator
+does not check this (S3), so it is on you.
 
 v6 introduced short-circuit evaluation. Any assignment tucked into the right-hand
 side of `and`/`or` will sometimes not run.
@@ -180,8 +216,8 @@ platform's required fields (`ticker`, `action`, `sentiment`, `quantity` are comm
 - [ ] `validate_pine_script` clean
 - [ ] Every `request.security` uses `[1]` or an explicit `lookahead_off`
 - [ ] Entries gated on `barstate.isconfirmed`, or `calc_on_every_tick=false`
-- [ ] All `ta.*` calls unconditional
-- [ ] Accumulators declared `var`; no assignment inside `and`/`or`
+- [ ] All `ta.*` calls unconditional — including on the right of `and`/`or`, which short-circuits
+- [ ] Every accumulator's lifetime matches its meaning: `var` for a running total, no `var` (or a reset before the loop) for a per-bar one
 - [ ] Commission and slippage set to something realistic
 - [ ] Every entry has a matching exit
 - [ ] Backtest sample is long enough to include a regime change

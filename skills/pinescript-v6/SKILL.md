@@ -42,7 +42,35 @@ var int count = 0
 count := count + 1
 ```
 
-`=` declares. `:=` reassigns. Using `=` twice on the same name is an error.
+**`var` cuts both ways, and the second edge is sharper.** It persists, so anything
+you accumulate into it on every bar keeps growing:
+
+```pine
+// WRONG — adds ten more closes on EVERY bar, for the life of the chart
+var float sum = 0.0
+for i = 0 to 9
+    sum := sum + close[i]
+
+// RIGHT — a per-bar total must not be var
+float sum = 0.0
+for i = 0 to 9
+    sum += close[i]
+```
+
+Loop bodies re-run every bar too, so a `var` loop counter is already at its terminal
+value on bar two and the loop never runs again:
+
+```pine
+var int counter = 0     // WRONG — on bar 2 counter is already 5
+while counter < 5
+    counter += 1
+```
+
+Ask of every accumulator: **does its lifetime match its meaning?** "So far" wants
+`var`; "for this bar" must not have it. Detected as **S3**.
+
+`=` declares. `:=` reassigns. Using `=` twice on the same name is a TradingView
+error — but *not* one this validator catches, so it is on you.
 
 **`ta.*` functions must run on every bar.** They keep internal state, so calling one
 inside a conditional silently corrupts it:
@@ -133,6 +161,17 @@ indicator("Title", overlay=true)     // or strategy(...)
 | `Undeclared identifier` | Variable assigned only inside an `if`; declare it before with `var` or a default |
 | `Cannot call 'ta.sma' with 'series'` where `simple` required | A `length` argument must be `simple int` — inputs are, series values are not |
 | `Mismatched input ... expecting` | `=` used for reassignment where `:=` is required |
+| `Cannot use 'plot' in local scope` | `plot`/`bgcolor`/`fill` indented inside an `if`. They take a series — compute the series conditionally, then plot at global scope. Detected as **S7** |
+| Function declared inside a block | A `f(x) =>` definition must sit at column 0. Detected as **S8** |
+
+## Where to go next
+
+This skill is the language. For working code, start from a validated scaffold rather
+than composing from memory:
+
+- **Indicators** — `pinescript-indicator`, three scaffolds validated by `make examples`
+- **Strategies** — `pinescript-strategy`, two scaffolds plus the five costly traps
+- **Fixing a diagnostic** — `pinescript-validation`, every finding and its remedy
 
 ## References
 

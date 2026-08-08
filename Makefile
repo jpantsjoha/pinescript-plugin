@@ -1,12 +1,12 @@
-.PHONY: gate spec manifest agents skills links examples mcp hooks help
+.PHONY: gate spec manifest agents skills links anchors examples mcp hooks help
 
 PYTHON  := python3
 SCRIPTS := scripts
 
 # ─── Pre-commit gate. Install once with: make hooks ──────────────────────────
-gate: spec manifest agents skills links examples mcp
+gate: spec manifest agents skills links anchors examples mcp
 	@echo ""
-	@echo "Gate passed: spec + manifest + agents + skills + links + examples + mcp"
+	@echo "Gate passed: spec + manifest + agents + skills + links + anchors + examples + mcp"
 
 spec:
 	@echo "==> Agent Plugins 1.0.0 conformance..."
@@ -30,6 +30,10 @@ links:
 
 # Every Pine snippet inside a skill is extracted and validated. A skill that ships
 # Pine failing its own checker is worse than no skill at all.
+anchors:
+	@echo "==> Semantic-check doc anchors resolve to real skill headings..."
+	@node $(SCRIPTS)/check_doc_anchors.js
+
 examples:
 	@echo "==> Validating Pine examples embedded in skills..."
 	@$(PYTHON) $(SCRIPTS)/validate_skill_examples.py

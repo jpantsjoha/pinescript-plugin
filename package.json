@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
-    "pinescript-v6-validator": "^0.2.1"
+    "pinescript-v6-validator": "^0.3.0"
   }
 }
