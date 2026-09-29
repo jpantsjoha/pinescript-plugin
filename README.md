@@ -55,7 +55,7 @@ its own history, a strategy that opens positions and never closes them.
 > — [PickMyTrade](https://blog.pickmytrade.io/debugging-tradingview-strategies-10-common-pine-script-mistakes/)
 
 Prose cannot fix that class of bug, because the author already believes the code
-is right. **Detection can.** Eight checks ship today:
+is right. **Detection can.** Nine checks ship today:
 
 | ID | Catches | Severity |
 |---|---|---|
@@ -66,6 +66,7 @@ is right. **Detection can.** Eight checks ship today:
 | S7 | `plot` / `bgcolor` / `fill` outside global scope | Error |
 | S8 | A function defined inside a block | Error |
 | S9 | `strategy.entry` with no exit anywhere in the script | Warning |
+| S10 | A hard-coded external feed in `request.*()` without `ignore_invalid_symbol` | Info |
 
 Considered one and decided it is fine? Silence it:
 
@@ -93,7 +94,7 @@ the same code running inside a VS Code extension with 1,400+ installs at 4.45
 stars. Your agent and your editor read from one implementation, so they cannot
 disagree about a file.
 
-Behind it: 457 function signatures from the official reference, a hand-maintained
+Behind it: 475 function signatures from the official reference, a hand-maintained
 layer for everything TradingView shipped since, explicit overload modelling, and a
 golden corpus proven able to fail. Reintroduce a fixed bug and the build goes red.
 
@@ -233,9 +234,13 @@ embedded Pine validation, and the MCP behaviour tests.
 
 Stating it plainly beats you finding out.
 
-- **Constant and built-in-variable NAMES are not checked.** `shape.trianglup`,
-  `color.grene` and `plot.style_circlez` validate clean here and fail on
-  TradingView. Only *parameter* names are checked, never the values.
+- **Only constant namespaces have their member names checked.** Since engine
+  0.4.x, `shape.trianglup`, `color.grene`, `plot.style_circlez` and
+  `barstate.islastt` are errors. Variables in namespaces without a complete
+  member list — `syminfo.*`, `timeframe.*`, `chart.*`, and non-call members of
+  `ta.*` such as `ta.tr` — are not checked, so `syminfo.tickeridd` and `ta.trr`
+  still validate clean. (Misspelled function *calls*, such as `ta.smaa(...)`, are
+  errors.)
   `lookup_pine_reference` covers functions only, so a `found: false` for
   `barstate.islast` means "not a function", not "not real".
 - **One check is specified but not built.** S4 (assignment inside `and`/`or`) is a
@@ -244,7 +249,9 @@ Stating it plainly beats you finding out.
   short-circuits into a conditional call — escapes S2 for the same reason.
 - **Re-declaring a name with `=`** is a TradingView error and passes here.
 - **No type inference.** A `series` value passed where `simple` is required
-  compiles here and fails on TradingView. Fixing that needs an AST the engine
+  compiles here and fails on TradingView. The one type rule (engine 0.4.x): a
+  declared type is checked against a single direct `input.*()` call, so
+  `int x = input.float(1.0)` is an error. Fixing that needs an AST the engine
   does not have.
 - **Hooks work in Claude Code only.** Antigravity, Codex and Kimi get the skills
   and the MCP tools. Their harnesses do not load the hook.

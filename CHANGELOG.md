@@ -7,6 +7,48 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### The plugin now runs engine 0.4.3, not 0.3.0
+
+`package.json` pinned `pinescript-v6-validator` at `^0.3.0`. For a 0.x version that
+range admits only 0.3.x, so the MCP tool, the hook and the example gate ran engine
+0.3.0 and missed every 0.4.x fix while the VS Code extension shipped them. The pin
+is now `^0.4.3` (lockfile resolves 0.4.3). What that brings, checked against the
+installed package:
+
+- **S10** (info hint): a hard-coded external feed in `request.*()` without
+  `ignore_invalid_symbol`. Checks now ship as S1-S3 and S5-S10; S4 is still
+  specified and not built.
+- **Invalid-cast rule**: `int x = input.float(1.0)` is an error.
+- **Constant-namespace members are checked**: `color.purplee`, `shape.trianglup`,
+  `plot.style_circlez`, `barstate.islastt` are errors. Variables in open
+  namespaces (`syminfo.*`, `timeframe.*`, `chart.*`) are still not checked.
+- Wrapped statements are joined before validation, and many false-positive fixes.
+- The function reference grows from 457 to 475 entries.
+
+`tests/engine-version.test.js` pins this down: the invalid-cast and
+misspelled-constant probes fail on 0.3.0 and pass on 0.4.3, each with a paired
+"still clean" case.
+
+### Local-checkout fallback finds the current engine layout
+
+The extension's single-engine change removed `dist/src/parser/*` and `dist/v6/*`,
+so the fallback in the MCP server, the hook and the example gate could no longer
+find a checkout. All three now share one resolver, `mcp/engine.js`, which tries
+`dist/engine/index.js`, then `packages/validator/dist/index.js`, and returns the
+same shape as the npm branch (including `validatePineScript`).
+`PINESCRIPT_VALIDATOR`, when set, now wins over the npm package — an override that
+npm silently beat would test the wrong engine. `scripts/validate_pine.js` is the
+headless CLI the hook and `make examples` call.
+
+### Changed
+
+- `make examples` validates against the plugin's own engine instead of requiring
+  an extension checkout, so the gate no longer fails on machines without one.
+- README, SPEC, the validation skill and the manifests' "457-function" figure
+  updated to the 0.4.3 facts above.
+
 ## [0.4.3] - 2026-08-08
 
 ### The accumulator guidance was the inverse of the bug

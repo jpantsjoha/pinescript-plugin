@@ -1,6 +1,6 @@
 # pinescript-plugin — Specification
 
-**Status:** v0.4.0 shipped · 8 of 9 semantic checks implemented (S3a folded into S3; S4 deferred)
+**Status:** v0.4.0 shipped · plugin runs engine 0.4.3 · 9 semantic checks ship: S1-S3, S5-S10 (S3a folded into S3; S4 deferred)
 **Last updated:** 2026-08-08
 
 ---
@@ -15,7 +15,7 @@ There are **three artefacts and one capability**:
 ```
                  ┌──────────────────────────────────┐
                  │  pinescript-v6-validator  (npm)  │   THE CAPABILITY
-                 │  validator + 457-signature data  │   detection lives here
+                 │  validator + 475-signature data  │   detection lives here
                  └───────────────┬──────────────────┘
                                  │  consumed by both
                 ┌────────────────┴────────────────┐
@@ -82,7 +82,8 @@ The differentiator. Each is mechanically detectable from the existing line-based
 pass — **no AST required**, which matters because the AST path in the extension is
 broken and unlikely to be repaired soon.
 
-**Shipped in engine 0.3.0: S1, S2, S3b, S5, S6, S7, S8, S9.**
+**Shipped in engine 0.4.3 (the version this plugin pins): S1, S2, S3b, S5, S6, S7, S8, S9, S10.**
+S1-S9 arrived by engine 0.3.0; S10 arrived in the 0.4.x line.
 **Deferred: S3a, S4** — see the note below the table.
 
 | ID | Check | Detects | Severity | Status |
@@ -97,6 +98,7 @@ broken and unlikely to be repaired soon.
 | **S7** | `plot`/`bgcolor`/`fill` at non-zero indentation | Compile failure | Error | ✅ shipped |
 | **S8** | Function definition (`f(x) =>`) at non-zero indentation | Compile failure | Error | ✅ shipped |
 | **S9** | `strategy.entry` present with no `strategy.exit` / `close` / `close_all` | Unbounded risk | Warning | ✅ shipped |
+| **S10** | Hard-coded external feed in `request.*()` without `ignore_invalid_symbol` | Script halts for a viewer whose plan cannot read the feed | Info | ✅ shipped (engine 0.4.x) |
 
 ### S3 has two halves, and the second is the dangerous one
 

@@ -48,7 +48,7 @@ sites where it drifts from the documentation.
 
 ```ts
 interface SemanticCheck {
-  id: 'S1' | … | 'S9';
+  id: 'S1' | … | 'S10';
   severity: DiagnosticSeverity;
   title: string;
   explain: (ctx) => string;   // the user-facing message
@@ -127,6 +127,7 @@ so that decision costs nothing.
 |---|---|---|
 | Error (0) | Will not compile on TradingView | S5, S6, S7, S8 |
 | Warning (1) | Compiles; probably not what you meant | S1, S2, S3, S4, S9 |
+| Info (2) | A hint, never blocking | S10 (engine 0.4.x) |
 
 Nine new diagnostics arriving at once risks warning fatigue. Only genuine compile
 failures are errors; everything else warns and is suppressible.
