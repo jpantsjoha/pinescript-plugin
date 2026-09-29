@@ -1,6 +1,6 @@
 {
   "name": "pinescript-plugin",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "private": true,
   "description": "MCP server for the Pine Script v6 agent plugin",
   "license": "MIT",

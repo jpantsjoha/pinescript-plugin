@@ -7,7 +7,23 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [0.5.0] - 2026-09-29
+
+The plugin now runs validation engine 0.4.3 (it was stuck on 0.3.0), so an agent
+sees what the VS Code extension shows:
+
+- **Invalid casts are errors:** `int x = input.float(1.0)` no longer passes.
+- **Misspelled constants are errors:** `color.purplee`, `shape.trianglup`,
+  `plot.style_circlez`.
+- **S10**, a new info hint: a hard-coded external feed without
+  `ignore_invalid_symbol` halts the script for viewers whose plan cannot read it.
+- **Wrapped statements** are joined before checking, and many false positives
+  are gone.
+- **The edit hook blocks on real errors** again. With a local extension checkout
+  it had silently found nothing since the extension's engine moved.
+
+MINOR, not PATCH: scripts that validated clean on 0.4.x of this plugin can now
+report errors.
 
 ### The plugin now runs engine 0.4.3, not 0.3.0
 
@@ -44,6 +60,17 @@ headless CLI the hook and `make examples` call.
 
 ### Changed
 
+- One plugin version, 0.5.0, in every file that states it. PLUGIN.md,
+  plugin.yaml, the MCP server handshake and all skill metadata said 0.4.2 while
+  package.json and the manifests said 0.4.3. `tests/version-consistency.test.js`
+  now fails the gate on any drift, and on a missing CHANGELOG heading.
+- `scripts/validate_pine.js` refuses an empty file list (exit 2) rather than
+  exiting 0, and the hook feeds back diagnostics only — resolver notices on
+  stderr no longer leak into the message.
+- Any engine that loads without `validatePineScript` is skipped, npm or checkout,
+  so a partial engine cannot report a file clean.
+- The indicator skill documents S10 with a validated `ignore_invalid_symbol`
+  example; the validation skill no longer calls every non-error finding a warning.
 - `make examples` validates against the plugin's own engine instead of requiring
   an extension checkout, so the gate no longer fails on machines without one.
 - README, SPEC, the validation skill and the manifests' "457-function" figure

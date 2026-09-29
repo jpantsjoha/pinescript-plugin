@@ -1,7 +1,7 @@
 # pinescript-plugin — Specification
 
-**Status:** v0.4.0 shipped · plugin runs engine 0.4.3 · 9 semantic checks ship: S1-S3, S5-S10 (S3a folded into S3; S4 deferred)
-**Last updated:** 2026-08-08
+**Status:** plugin v0.5.0 · runs engine 0.4.3 · 9 semantic checks ship: S1-S3, S5-S10 (S3a folded into S3; S4 deferred)
+**Last updated:** 2026-09-29
 
 ---
 
