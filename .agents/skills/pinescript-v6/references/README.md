@@ -15,7 +15,7 @@ Pine changes, and rules get **removed** as well as added.
 
 The `lookup_pine_reference` MCP tool answers from the dataset maintained in
 [pinescript-vscode-extension](https://github.com/jpantsjoha/pinescript-vscode-extension)
-— 457 function signatures scraped from the official reference, plus a hand-verified
+— 475 function signatures scraped from the official reference, plus a hand-verified
 layer covering API released since the scrape.
 
 Prefer that tool over recalling a signature from memory. Parameter names are the

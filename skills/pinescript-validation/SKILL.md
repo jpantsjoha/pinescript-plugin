@@ -3,7 +3,7 @@ name: pinescript-validation
 description: "Diagnose and fix Pine Script v6 errors deterministically — read each validator diagnostic, apply the known fix, re-validate. Covers every diagnostic class the validator emits, what it cannot see, and how to work through an existing codebase of broken .pine files. Use when a Pine script fails to compile, when TradingView reports an error, when validate_pine_script returns diagnostics, when auditing or migrating an existing Pine codebase, or when asked to fix, debug or repair Pine Script."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.4.2"
+  "pinescript-plugin/version": "0.5.0"
   "pinescript-plugin/triggers": "pine script error, fix pine script, debug pine, compile error, validate pine, tradingview error, script won't compile, audit pine codebase, migrate pine"
   "pinescript-plugin/pine-version": "v6"
 ---
@@ -90,7 +90,7 @@ if this fires on a call with three arguments, report it as a validator bug.
 `"timeframe_gaps" has no effect without "timeframe"` ·
 `Wrap session checks as: not na(time(...))`
 
-## Semantic findings (S1-S9) — code that compiles and is still wrong
+## Semantic findings (S1-S3, S5-S10) — code that compiles and is still wrong
 
 These are **warnings about intent**, not compile errors. Each carries an id.
 
@@ -105,8 +105,10 @@ These are **warnings about intent**, not compile errors. Each carries an id.
 | **S7** | `plot`/`bgcolor`/`fill` outside global scope | Move it out and pass `na` to hide it conditionally |
 | **S8** | Function defined inside a block | Move it to root indentation |
 | **S9** | `strategy.entry` with no exit anywhere | Add `strategy.exit` or `strategy.close` |
+| **S10** | *(info hint)* A hard-coded external feed in `request.*()` without `ignore_invalid_symbol` — halts for a viewer whose plan cannot read it | Pass `ignore_invalid_symbol=true` to degrade to `na`, or state the hard stop with `// pine-ignore: S10` |
 
-**Eight checks ship: S1, S2, S3, S5-S9.** Only S4 is specified and deliberately not
+**Nine checks ship (engine 0.4.3): S1-S3, S5-S10.** S10 is an info-level hint, not a
+warning. Only S4 is specified and deliberately not
 implemented — it is a heuristic about intent whose false-positive risk is unresolved.
 Watch for it yourself.
 
@@ -134,7 +136,8 @@ wants `var`. "Total for this bar" must not have it. S3 catches the second mistak
 S3a — the same variable declared *without* `var` when a running total was wanted —
 is still on you.
 
-**S5-S8 are errors** — TradingView will reject the script. The rest are warnings.
+**S5-S8 are errors** — TradingView will reject the script. S1-S3 and S9 are
+warnings. S10 is an info-level hint and never blocks.
 
 ### Suppressing a finding you have considered
 
@@ -162,10 +165,10 @@ Be explicit about this. A clean run is not proof the script is correct.
 |---|---|
 | **A missing `var` on a running total** | S3 catches the inverse (a `var` never reset); an accumulator that *should* persist and does not still validates clean |
 | **Short-circuit assignment** | S4 is unimplemented — `x := 1` inside `and`/`or` may never run |
-| **Constant and built-in-variable NAMES** | `shape.trianglup`, `color.grene`, `plot.style_circlez` all validate clean and all fail on TradingView. Only *parameter* names are checked, never the values. `lookup_pine_reference` covers functions only — a `found: false` for `barstate.islast` or `shape.triangleup` means "not a function", not "not real" |
+| **Members of open namespaces** | Constant namespaces are member-checked (`color.grene`, `shape.trianglup`, `plot.style_circlez`, `barstate.islastt` are errors), but variables in `syminfo.*`, `timeframe.*`, `chart.*` and non-call members of `ta.*` are not — `syminfo.tickeridd` and `ta.trr` validate clean (a misspelled *call* such as `ta.smaa(...)` is an error). `lookup_pine_reference` covers functions only — a `found: false` for `barstate.islast` or `shape.triangleup` means "not a function", not "not real" |
 | **Re-declaring a name with `=`** | `x = close` then `x = open` is a TradingView error and passes here |
 | **`ta.*` on the right of `and`/`or`** | S2 catches ternaries and blocks; short-circuit conditionality is the S4 shape and is unimplemented |
-| **Type compatibility** | `series` where `simple` is required compiles here, fails on TradingView |
+| **Type compatibility** | `series` where `simple` is required compiles here, fails on TradingView. The one exception: a declared type is checked against a single direct `input.*()` call, so `int x = input.float(1.0)` is an error |
 | **Script size** | 80k token limit — counted by TradingView, not here |
 | **Series semantics** | `ta.*` inside a conditional validates but corrupts state |
 

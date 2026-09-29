@@ -12,12 +12,12 @@ would be the point.
 Fragments (no `//@version` line) are wrapped in a minimal harness so they can be
 compiled in isolation.
 
-The validator lives in the pinescript-vscode-extension repository. If it cannot be
-located the script SKIPS with a clear message rather than passing silently — an
+The engine is the plugin's own (scripts/validate_pine.js via mcp/engine.js). If it
+cannot be located the script SKIPS with a clear message rather than passing silently — an
 unverified example must never look verified.
 
   python3 scripts/validate_skill_examples.py
-  PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension python3 scripts/...
+  PINESCRIPT_VALIDATOR=/path/to/pinescript-vscode-extension python3 scripts/...   # unreleased engine
 """
 
 from __future__ import annotations
@@ -46,21 +46,26 @@ HARNESS_PRELUDE = (
 )
 
 
+CLI = ROOT / "scripts" / "validate_pine.js"
+
+
 def find_validator() -> Path | None:
-    """Locate validate-cli.js in the extension repo."""
-    explicit = os.environ.get("PINESCRIPT_VALIDATOR")
-    candidates = []
-    if explicit:
-        candidates.append(Path(explicit))
-    candidates += [
-        ROOT.parent / "pinescript-vscode-extension",
-        Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/Documents/workspaces/pinescript-vscode-extension",
-    ]
-    for base in candidates:
-        cli = base / "validate-cli.js"
-        if cli.is_file() and (base / "dist/src/parser/accurateValidator.js").is_file():
-            return cli
-    return None
+    """Return the plugin's validation CLI if it can load an engine.
+
+    scripts/validate_pine.js resolves the engine through mcp/engine.js — the same
+    resolver the MCP server and the hook use: PINESCRIPT_VALIDATOR, then the npm
+    pinescript-v6-validator, then a sibling checkout of the extension. This used to
+    require `dist/src/parser/accurateValidator.js` in an extension checkout, a path
+    the extension's single-engine change removed, so the gate could not find an
+    engine and failed on every machine without an old build.
+    """
+    probe = subprocess.run(
+        ["node", str(CLI), "--probe"], capture_output=True, text=True, cwd=ROOT
+    )
+    if probe.returncode != 0:
+        return None
+    print(f"      engine: {probe.stdout.strip()}")
+    return CLI
 
 
 def extract_blocks(text: str) -> list[tuple[int, str]]:
@@ -125,9 +130,8 @@ def main() -> int:
         allowed = "--allow-skip" in sys.argv
         print(
             "SKIP  Pine validator not found.\n"
-            "      Examples are UNVERIFIED. Clone jpantsjoha/pinescript-vscode-extension\n"
-            "      next to this repo and run `npm run build` there, or set\n"
-            "      PINESCRIPT_VALIDATOR to its path.\n"
+            "      Examples are UNVERIFIED. Run `npm install` in this repo, or set\n"
+            "      PINESCRIPT_VALIDATOR to a built pinescript-vscode-extension checkout.\n"
             "      Pass --allow-skip to accept an unverified run deliberately.",
             file=sys.stderr,
         )

@@ -1,5 +1,5 @@
 name: pinescript-plugin
-version: 0.4.2
+version: 0.5.0
 description: >
   TradingView Pine Script v6 for coding agents, backed by a real validator rather
   than prose. Skills covering the language and an MCP server that checks Pine and
