@@ -20,40 +20,17 @@ esac
 
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# The npm engine FIRST, matching the MCP server. This previously tried only local
-# checkouts of the extension repo, so on any normal install the hook found nothing
-# and exited silently — while the README promised "an actual control", not
-# "remember to check your work".
-if node -e "require('pinescript-v6-validator')" >/dev/null 2>&1 \
-   || (cd "$PLUGIN_ROOT" && node -e "require('pinescript-v6-validator')" >/dev/null 2>&1); then
-  output="$(cd "$PLUGIN_ROOT" && node -e '
-    const eng = require("pinescript-v6-validator");
-    const src = require("fs").readFileSync(process.argv[1], "utf8");
-    const found = eng.applySuppressions(
-      eng.validatePineScript(src), eng.extractSuppressions(src)
-    ).filter(d => d.severity === 0);
-    if (!found.length) process.exit(0);
-    for (const d of found) console.error(`  L${d.line}:${d.column}  ${d.message}`);
-    process.exit(1);
-  ' "$file_path" 2>&1)"
-  [ $? -eq 0 ] && exit 0
-  printf 'Pine validation failed for %s\n\n%s\n' "$file_path" "$output" >&2
-  exit 2
-fi
+# One resolver for the hook, the MCP server and the example gate (mcp/engine.js):
+# PINESCRIPT_VALIDATOR if set, then the npm engine, then a sibling checkout of the
+# extension (dist/engine/index.js or packages/validator/dist/index.js). The hook
+# previously looked for dist/src/parser/*, which the extension's single-engine change
+# removed, so a checkout was never found.
+output="$(node "$PLUGIN_ROOT/scripts/validate_pine.js" "$file_path" 2>&1)"
+status=$?
+# 1 = real errors; 2 = tooling failure; 3 = no engine anywhere. Only real
+# errors block — stay silent rather than nag.
+[ $status -eq 1 ] || exit 0
 
-# Fallback: a local checkout of the extension, for development against an
-# unreleased engine.
-for base in "${PINESCRIPT_VALIDATOR:-}" "$PLUGIN_ROOT/../pinescript-vscode-extension"; do
-  [ -n "$base" ] || continue
-  if [ -f "$base/validate-cli.js" ] && [ -f "$base/dist/src/parser/accurateValidator.js" ]; then
-    ENGINE="$base"; break
-  fi
-done
-[ -n "${ENGINE:-}" ] || exit 0   # no engine anywhere — stay silent rather than nag
-
-output="$(cd "$ENGINE" && node validate-cli.js "$file_path" 2>&1)"
-[ $? -eq 1 ] || exit 0
-
-printf 'Pine validation failed for %s\n\n%s\n' \
-  "$file_path" "$(printf '%s' "$output" | sed $'s/\033\\[[0-9;]*m//g')" >&2
+printf 'Pine validation failed for %s\n\n%s\n' "$file_path" \
+  "$(printf '%s' "$output" | sed -e 's/^ERROR .*\.pine:L/  L/')" >&2
 exit 2

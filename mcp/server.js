@@ -5,7 +5,7 @@
  * Two tools, both grounded in the validation engine from
  * jpantsjoha/pinescript-vscode-extension rather than in the model's recollection:
  *
- *   validate_pine_script   — run both diagnostic paths, return structured errors
+ *   validate_pine_script   — run all three diagnostic sources, return structured errors
  *   lookup_pine_reference  — the real signature for a v6 symbol
  *
  * The second matters more than it looks. Agents write Pine confidently and wrongly:
@@ -21,8 +21,6 @@
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
-const os = require('os');
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
@@ -35,55 +33,7 @@ const {
 // Engine discovery
 //──────────────────────────────────────────────────────────
 
-/**
- * Load the validation engine.
- *
- * Primary source is the published `pinescript-v6-validator` package, so the plugin
- * works for anyone who installs it — no checkout of the extension required. The
- * on-disk fallbacks remain for development against unreleased engine changes.
- */
-function loadEngine() {
-  try {
-    const pkg = require('pinescript-v6-validator');
-    return {
-      base: 'pinescript-v6-validator (npm)',
-      AccurateValidator: pkg.AccurateValidator,
-      runDocumentChecks: pkg.runDocumentChecks,
-      validatePineScript: pkg.validatePineScript,
-      signatures: pkg.PINE_FUNCTIONS_MERGED || {},
-    };
-  } catch (error) {
-    process.stderr.write(`[pinescript-mcp] npm engine unavailable (${error.message}); trying local checkouts\n`);
-  }
-
-  const candidates = [];
-  if (process.env.PINESCRIPT_VALIDATOR) candidates.push(process.env.PINESCRIPT_VALIDATOR);
-  candidates.push(path.join(__dirname, '..', '..', 'pinescript-vscode-extension'));
-  candidates.push(
-    path.join(
-      os.homedir(),
-      'Library/Mobile Documents/com~apple~CloudDocs/Documents/workspaces/pinescript-vscode-extension'
-    )
-  );
-
-  for (const base of candidates) {
-    const validatorPath = path.join(base, 'dist/src/parser/accurateValidator.js');
-    const checksPath = path.join(base, 'dist/src/parser/documentChecks.js');
-    const dataPath = path.join(base, 'dist/v6/parameter-requirements-merged.js');
-    if (!fs.existsSync(validatorPath) || !fs.existsSync(checksPath)) continue;
-    try {
-      return {
-        base,
-        AccurateValidator: require(validatorPath).AccurateValidator,
-        runDocumentChecks: require(checksPath).runDocumentChecks,
-        signatures: fs.existsSync(dataPath) ? require(dataPath).PINE_FUNCTIONS_MERGED : {},
-      };
-    } catch (error) {
-      process.stderr.write(`[pinescript-mcp] engine at ${base} failed to load: ${error.message}\n`);
-    }
-  }
-  return null;
-}
+const { loadEngine } = require('./engine.js');
 
 const engine = loadEngine();
 
@@ -141,7 +91,7 @@ function validatePineScript({ code, file_path: filePath }) {
       column: d.column,
       severity: SEVERITY_LABEL[d.severity] || 'error',
       message: d.message,
-      // Present only on semantic findings (S1-S9). Its absence marks a syntactic
+      // Present only on semantic findings (S1-S3, S5-S10). Its absence marks a syntactic
       // diagnostic, which cannot be suppressed.
       ...(d.checkId ? { check: d.checkId } : {}),
     })),
@@ -201,7 +151,7 @@ const TOOLS = [
     name: 'validate_pine_script',
     description:
       'Validate Pine Script v6 source and return structured diagnostics with line ' +
-      'numbers. Runs the same two diagnostic paths as the VS Code extension, so the ' +
+      'numbers. Runs the same three diagnostic sources as the VS Code extension, so the ' +
       'result matches what the user sees in their editor. Call this before telling ' +
       'anyone a script works.',
     inputSchema: {
@@ -256,7 +206,14 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
 // Exported for the smoke tests, which drive the handlers directly rather than
 // booting stdio.
-module.exports = { validatePineScript, lookupPineReference, TOOLS, engineLoaded: Boolean(engine) };
+module.exports = {
+  validatePineScript,
+  lookupPineReference,
+  TOOLS,
+  engineLoaded: Boolean(engine),
+  engineBase: engine ? engine.base : null,
+  loadEngine,
+};
 
 if (require.main === module) {
   const transport = new StdioServerTransport();
