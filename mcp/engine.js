@@ -30,6 +30,14 @@ const os = require('os');
  */
 const CHECKOUT_ENGINE_PATHS = ['dist/engine/index.js', 'packages/validator/dist/index.js'];
 
+/** True when a loaded module exposes the full surface the server needs. */
+function hasEngineShape(pkg) {
+  return Boolean(pkg) &&
+    typeof pkg.AccurateValidator === 'function' &&
+    typeof pkg.runDocumentChecks === 'function' &&
+    typeof pkg.validatePineScript === 'function';
+}
+
 function engineFrom(pkg, base) {
   return {
     base,
@@ -46,7 +54,10 @@ function loadFromCheckout(base) {
     if (!fs.existsSync(entry)) continue;
     try {
       const pkg = require(entry);
-      if (typeof pkg.AccurateValidator !== 'function') continue;
+      if (!hasEngineShape(pkg)) {
+        process.stderr.write(`[pinescript-mcp] ${entry} does not export the engine surface; skipped\n`);
+        continue;
+      }
       return engineFrom(pkg, entry);
     } catch (error) {
       process.stderr.write(`[pinescript-mcp] engine at ${entry} failed to load: ${error.message}\n`);
@@ -66,7 +77,12 @@ function loadEngine() {
   }
 
   try {
-    return engineFrom(require('pinescript-v6-validator'), 'pinescript-v6-validator (npm)');
+    // The same shape check as a checkout: an npm engine that loads but lacks
+    // validatePineScript (0.1.x) would otherwise run a subset of the checks and
+    // report a file clean that the editor flags.
+    const pkg = require('pinescript-v6-validator');
+    if (hasEngineShape(pkg)) return engineFrom(pkg, 'pinescript-v6-validator (npm)');
+    process.stderr.write('[pinescript-mcp] npm engine lacks validatePineScript; trying local checkouts\n');
   } catch (error) {
     process.stderr.write(`[pinescript-mcp] npm engine unavailable (${error.message}); trying local checkouts\n`);
   }
@@ -85,4 +101,4 @@ function loadEngine() {
   return null;
 }
 
-module.exports = { loadEngine, CHECKOUT_ENGINE_PATHS };
+module.exports = { loadEngine, hasEngineShape, CHECKOUT_ENGINE_PATHS };

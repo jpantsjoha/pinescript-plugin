@@ -25,12 +25,15 @@ PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # extension (dist/engine/index.js or packages/validator/dist/index.js). The hook
 # previously looked for dist/src/parser/*, which the extension's single-engine change
 # removed, so a checkout was never found.
-output="$(node "$PLUGIN_ROOT/scripts/validate_pine.js" "$file_path" 2>&1)"
+# stdout carries only the diagnostics (--plain: "  L<line>:<col>  <message>");
+# resolver notices go to stderr and are discarded, so they never land in the
+# message fed back to the agent. No sed over the output: a path or message that
+# happens to contain ".pine:L" cannot be mangled.
+output="$(node "$PLUGIN_ROOT/scripts/validate_pine.js" --plain "$file_path" 2>/dev/null)"
 status=$?
 # 1 = real errors; 2 = tooling failure; 3 = no engine anywhere. Only real
 # errors block — stay silent rather than nag.
 [ $status -eq 1 ] || exit 0
 
-printf 'Pine validation failed for %s\n\n%s\n' "$file_path" \
-  "$(printf '%s' "$output" | sed -e 's/^ERROR .*\.pine:L/  L/')" >&2
+printf 'Pine validation failed for %s\n\n%s\n' "$file_path" "$output" >&2
 exit 2

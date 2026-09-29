@@ -3,7 +3,7 @@ name: pinescript-indicator
 description: "Generate working TradingView Pine Script v6 indicators — plotting, drawing objects, tables, alerts, inputs and the plot/object limits that break scripts at scale. Provides validated scaffolds to start from rather than composing from memory. Use when asked to write, create or build an indicator, study, oscillator or overlay; to plot something on a chart; to add labels, lines, boxes or a table; or to add alerts to an indicator."
 license: MIT
 metadata:
-  "pinescript-plugin/version": "0.4.2"
+  "pinescript-plugin/version": "0.5.0"
   "pinescript-plugin/triggers": "write an indicator, create indicator, tradingview study, oscillator, overlay, plot on chart, add labels, draw lines, add a table, alertcondition, pine indicator"
   "pinescript-plugin/pine-version": "v6"
 ---
@@ -140,6 +140,18 @@ d = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahe
 
 Cache the call in a variable; never repeat it inline. **Limit: 40 `request.*`
 calls per script.**
+
+A **hard-coded external feed** is read with the viewer's data plan, not yours. A
+viewer who cannot read it gets "Permission denied for symbol" and the whole script
+halts. The validator raises this as **S10**, an info-level hint:
+
+```pine
+// STABLE — degrades to na for a viewer who cannot read the feed
+spx = request.security("SP:SPX", "D", close[1], lookahead=barmerge.lookahead_off, ignore_invalid_symbol=true)
+```
+
+If the script is meaningless without that feed, keep the hard stop and say so with
+`// pine-ignore: S10`.
 
 ## Checklist before returning an indicator
 
