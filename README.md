@@ -10,6 +10,8 @@
 
 # pinescript-plugin
 
+Build, run and test: see [run_instruction.md](run_instruction.md).
+
 > **Your agent writes Pine Script it cannot check. This gives it a checker.**
 
 > **Eight of these checks catch code that compiles perfectly and still loses money.**
